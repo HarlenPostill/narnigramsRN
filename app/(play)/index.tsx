@@ -1,27 +1,46 @@
-import { ScrollView, View, Text, Pressable, PlatformColor } from "react-native";
-import { Link, useRouter } from "expo-router";
-import Animated, { FadeInDown } from "react-native-reanimated";
-import { Image } from "expo-image";
-import { useStorage } from "@/hooks/use-storage";
 import { useColors } from "@/hooks/use-colors";
+import { useStorage } from "@/hooks/use-storage";
 import type { GameSettings, GameState } from "@/types/game";
 import { DEFAULT_SETTINGS } from "@/types/game";
+import { Image } from "expo-image";
+import { useRouter } from "expo-router";
+import { PlatformColor, Pressable, ScrollView, Text, View } from "react-native";
+import Animated, { FadeInDown } from "react-native-reanimated";
 
-const PRESETS: { label: string; description: string; settings: Partial<GameSettings> }[] = [
+const PRESETS: {
+  label: string;
+  description: string;
+  settings: Partial<GameSettings>;
+}[] = [
   {
     label: "Quick",
     description: "50 tiles, easy letters",
-    settings: { poolSize: 50, handSize: 11, difficulty: "easy", timerMode: "none" },
+    settings: {
+      poolSize: 50,
+      handSize: 11,
+      difficulty: "easy",
+      timerMode: "none",
+    },
   },
   {
     label: "Standard",
-    description: "80 tiles, standard mix",
-    settings: { poolSize: 80, handSize: 15, difficulty: "standard", timerMode: "none" },
+    description: "72 tiles, standard mix",
+    settings: {
+      poolSize: 72,
+      handSize: 15,
+      difficulty: "standard",
+      timerMode: "none",
+    },
   },
   {
     label: "Challenge",
     description: "100 tiles, hard letters, 15min",
-    settings: { poolSize: 100, handSize: 21, difficulty: "hard", timerMode: 15 },
+    settings: {
+      poolSize: 100,
+      handSize: 21,
+      difficulty: "hard",
+      timerMode: 15,
+    },
   },
 ];
 
@@ -51,7 +70,9 @@ function PresetCard({
           boxShadow: colors.cardShadow,
         })}
       >
-        <Text style={{ fontSize: 17, fontWeight: "600", color: colors.textPrimary }}>
+        <Text
+          style={{ fontSize: 17, fontWeight: "600", color: colors.textPrimary }}
+        >
           {label}
         </Text>
         <Text style={{ fontSize: 14, color: PlatformColor("secondaryLabel") }}>
@@ -65,10 +86,14 @@ function PresetCard({
 export default function HomeScreen() {
   const router = useRouter();
   const colors = useColors();
-  const [settings, setSettings] = useStorage<GameSettings>("settings", DEFAULT_SETTINGS);
+  const [settings, setSettings] = useStorage<GameSettings>(
+    "settings",
+    DEFAULT_SETTINGS,
+  );
   const [savedGame] = useStorage<GameState | null>("current-game", null);
 
-  const hasSavedGame = savedGame && savedGame.startedAt > 0 && !savedGame.isComplete;
+  const hasSavedGame =
+    savedGame && savedGame.startedAt > 0 && !savedGame.isComplete;
 
   const startWithPreset = (preset: Partial<GameSettings>) => {
     setSettings({ ...settings, ...preset });
@@ -103,7 +128,9 @@ export default function HomeScreen() {
       {hasSavedGame && (
         <Animated.View entering={FadeInDown.delay(100).duration(400)}>
           <Pressable
-            onPress={() => router.push({ pathname: "/game", params: { resume: "true" } })}
+            onPress={() =>
+              router.push({ pathname: "/game", params: { resume: "true" } })
+            }
             style={({ pressed }) => ({
               backgroundColor: pressed ? "rgba(52,199,89,0.08)" : colors.cardBg,
               borderRadius: 14,
@@ -121,11 +148,20 @@ export default function HomeScreen() {
               tintColor="#34C759"
             />
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 17, fontWeight: "600", color: colors.textPrimary }}>
+              <Text
+                style={{
+                  fontSize: 17,
+                  fontWeight: "600",
+                  color: colors.textPrimary,
+                }}
+              >
                 Resume Game
               </Text>
-              <Text style={{ fontSize: 14, color: PlatformColor("secondaryLabel") }}>
-                {savedGame.hand.length} tiles in hand · {Object.keys(savedGame.board).length} placed
+              <Text
+                style={{ fontSize: 14, color: PlatformColor("secondaryLabel") }}
+              >
+                {savedGame.hand.length} tiles in hand ·{" "}
+                {Object.keys(savedGame.board).length} placed
               </Text>
             </View>
           </Pressable>
@@ -184,16 +220,31 @@ export default function HomeScreen() {
             boxShadow: colors.cardShadow,
           }}
         >
-          <SettingLine label="Pool Size" value={`${settings.poolSize} tiles`} colors={colors} />
-          <SettingLine label="Hand Size" value={`${settings.handSize} tiles`} colors={colors} />
+          <SettingLine
+            label="Pool Size"
+            value={`${settings.poolSize} tiles`}
+            colors={colors}
+          />
+          <SettingLine
+            label="Hand Size"
+            value={`${settings.handSize} tiles`}
+            colors={colors}
+          />
           <SettingLine
             label="Difficulty"
-            value={settings.difficulty.charAt(0).toUpperCase() + settings.difficulty.slice(1)}
+            value={
+              settings.difficulty.charAt(0).toUpperCase() +
+              settings.difficulty.slice(1)
+            }
             colors={colors}
           />
           <SettingLine
             label="Timer"
-            value={settings.timerMode === "none" ? "None" : `${settings.timerMode} min`}
+            value={
+              settings.timerMode === "none"
+                ? "None"
+                : `${settings.timerMode} min`
+            }
             colors={colors}
           />
         </View>
@@ -216,7 +267,10 @@ function SettingLine({
       <Text style={{ fontSize: 15, color: PlatformColor("secondaryLabel") }}>
         {label}
       </Text>
-      <Text selectable style={{ fontSize: 15, fontWeight: "500", color: colors.textPrimary }}>
+      <Text
+        selectable
+        style={{ fontSize: 15, fontWeight: "500", color: colors.textPrimary }}
+      >
         {value}
       </Text>
     </View>

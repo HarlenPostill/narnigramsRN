@@ -1,7 +1,30 @@
 export type Letter =
-  | "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I"
-  | "J" | "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R"
-  | "S" | "T" | "U" | "V" | "W" | "X" | "Y" | "Z";
+  | "A"
+  | "B"
+  | "C"
+  | "D"
+  | "E"
+  | "F"
+  | "G"
+  | "H"
+  | "I"
+  | "J"
+  | "K"
+  | "L"
+  | "M"
+  | "N"
+  | "O"
+  | "P"
+  | "Q"
+  | "R"
+  | "S"
+  | "T"
+  | "U"
+  | "V"
+  | "W"
+  | "X"
+  | "Y"
+  | "Z";
 
 export interface Tile {
   id: string;
@@ -26,7 +49,7 @@ export function parseKey(key: string): BoardPosition {
 }
 
 export type Difficulty = "easy" | "standard" | "hard";
-export type PoolSize = 50 | 80 | 100;
+export type PoolSize = 50 | 72 | 100;
 export type HandSize = 11 | 15 | 21;
 export type TimerMode = "none" | 5 | 10 | 15 | 30;
 
@@ -39,7 +62,7 @@ export interface GameSettings {
 }
 
 export const DEFAULT_SETTINGS: GameSettings = {
-  poolSize: 80,
+  poolSize: 72,
   handSize: 15,
   difficulty: "standard",
   timerMode: "none",
@@ -78,7 +101,30 @@ export interface GameStats {
 }
 
 export const LETTER_POINTS: Record<Letter, number> = {
-  A: 1, B: 3, C: 3, D: 2, E: 1, F: 4, G: 2, H: 4, I: 1,
-  J: 8, K: 5, L: 1, M: 3, N: 1, O: 1, P: 3, Q: 10, R: 1,
-  S: 1, T: 1, U: 1, V: 4, W: 4, X: 8, Y: 4, Z: 10,
+  A: 1,
+  B: 3,
+  C: 3,
+  D: 2,
+  E: 1,
+  F: 4,
+  G: 2,
+  H: 4,
+  I: 1,
+  J: 8,
+  K: 5,
+  L: 1,
+  M: 3,
+  N: 1,
+  O: 1,
+  P: 3,
+  Q: 10,
+  R: 1,
+  S: 1,
+  T: 1,
+  U: 1,
+  V: 4,
+  W: 4,
+  X: 8,
+  Y: 4,
+  Z: 10,
 };

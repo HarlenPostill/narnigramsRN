@@ -1,5 +1,5 @@
+import type { GameRecord, GameStats } from "@/types/game";
 import { storage } from "./storage";
-import type { GameRecord, GameStats, Difficulty, PoolSize } from "@/types/game";
 
 const STATS_KEY = "game-stats";
 

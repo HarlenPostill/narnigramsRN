@@ -1,15 +1,15 @@
-import { useCallback, useReducer } from "react";
-import type { Tile, GameSettings, GameState } from "@/types/game";
+import type { GameSettings, GameState, Tile } from "@/types/game";
 import { posKey } from "@/types/game";
 import {
+  canPeel,
+  checkWinCondition,
   createTilePool,
   drawTiles,
   exchangeTile,
   validateBoard,
-  checkWinCondition,
-  canPeel,
 } from "@/utils/game-engine";
 import { storage } from "@/utils/storage";
+import { useCallback, useReducer } from "react";
 
 const SAVE_KEY = "current-game";
 
@@ -27,7 +27,10 @@ type Action =
 function reducer(state: GameState, action: Action): GameState {
   switch (action.type) {
     case "INIT": {
-      const pool = createTilePool(action.settings.poolSize, action.settings.difficulty);
+      const pool = createTilePool(
+        action.settings.poolSize,
+        action.settings.difficulty,
+      );
       const { drawn, remaining } = drawTiles(pool, action.settings.handSize);
       return {
         hand: drawn,
@@ -58,7 +61,7 @@ function reducer(state: GameState, action: Action): GameState {
 
     case "RETURN_TILE": {
       const entry = Object.entries(state.board).find(
-        ([, t]) => t.id === action.tileId
+        ([, t]) => t.id === action.tileId,
       );
       if (!entry) return state;
       const [key, tile] = entry;
@@ -73,7 +76,7 @@ function reducer(state: GameState, action: Action): GameState {
 
     case "MOVE_TILE": {
       const entry = Object.entries(state.board).find(
-        ([, t]) => t.id === action.tileId
+        ([, t]) => t.id === action.tileId,
       );
       if (!entry) return state;
       const [oldKey, tile] = entry;
@@ -88,7 +91,7 @@ function reducer(state: GameState, action: Action): GameState {
     case "EXCHANGE_TILE": {
       const handTile = state.hand.find((t) => t.id === action.tileId);
       const boardEntry = Object.entries(state.board).find(
-        ([, t]) => t.id === action.tileId
+        ([, t]) => t.id === action.tileId,
       );
 
       let tile: Tile | undefined;
@@ -144,7 +147,7 @@ const INITIAL_STATE: GameState = {
   startedAt: 0,
   elapsedMs: 0,
   settings: {
-    poolSize: 80,
+    poolSize: 72,
     handSize: 15,
     difficulty: "standard",
     timerMode: "none",
@@ -180,23 +183,17 @@ export function useGame() {
     storage.set(SAVE_KEY, null);
   }, []);
 
-  const placeTile = useCallback(
-    (tileId: string, row: number, col: number) => {
-      dispatch({ type: "PLACE_TILE", tileId, row, col });
-    },
-    []
-  );
+  const placeTile = useCallback((tileId: string, row: number, col: number) => {
+    dispatch({ type: "PLACE_TILE", tileId, row, col });
+  }, []);
 
   const returnTile = useCallback((tileId: string) => {
     dispatch({ type: "RETURN_TILE", tileId });
   }, []);
 
-  const moveTile = useCallback(
-    (tileId: string, row: number, col: number) => {
-      dispatch({ type: "MOVE_TILE", tileId, row, col });
-    },
-    []
-  );
+  const moveTile = useCallback((tileId: string, row: number, col: number) => {
+    dispatch({ type: "MOVE_TILE", tileId, row, col });
+  }, []);
 
   const exchangeTileAction = useCallback((tileId: string) => {
     dispatch({ type: "EXCHANGE_TILE", tileId });
@@ -210,13 +207,10 @@ export function useGame() {
     dispatch({ type: "TICK", elapsedMs });
   }, []);
 
-  const endGame = useCallback(
-    (isWin: boolean) => {
-      dispatch({ type: "END_GAME", isWin });
-      storage.set(SAVE_KEY, null);
-    },
-    []
-  );
+  const endGame = useCallback((isWin: boolean) => {
+    dispatch({ type: "END_GAME", isWin });
+    storage.set(SAVE_KEY, null);
+  }, []);
 
   const boardIsValid = validateBoard(state.board);
   const canPeelNow = canPeel(state.hand, state.pool, state.board);
