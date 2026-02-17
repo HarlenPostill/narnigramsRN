@@ -10,10 +10,18 @@ import {
   View,
 } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
+import Animated, {
+  FadeIn,
+  FadeOut,
+  useSharedValue,
+} from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { GameBoard, GRID_COUNT } from "@/components/game/game-board";
+import {
+  BOARD_SIZE,
+  GameBoard,
+  GRID_COUNT,
+} from "@/components/game/game-board";
 import { GameHeader } from "@/components/game/game-header";
 import { PlayerHand } from "@/components/game/player-hand";
 import { CELL_SIZE } from "@/components/game/tile";
@@ -64,6 +72,18 @@ export default function GameScreen() {
   const [showWinModal, setShowWinModal] = useState(false);
   const [handHeight, setHandHeight] = useState(180);
   const didStart = useRef(false);
+
+  // Board transform shared values (lifted here so drop logic can read them)
+  const boardScale = useSharedValue(1);
+  const boardSavedScale = useSharedValue(1);
+  const boardTranslateX = useSharedValue(0);
+  const boardTranslateY = useSharedValue(0);
+  const boardSavedTranslateX = useSharedValue(0);
+  const boardSavedTranslateY = useSharedValue(0);
+
+  // Board container position on screen (from onLayout)
+  const boardContainerY = useRef(0);
+  const boardContainerHeight = useRef(screenHeight);
 
   // Start or restore game on mount
   useEffect(() => {
@@ -126,17 +146,56 @@ export default function GameScreen() {
     }
   }, [saveGame, state.hand.length, state.isComplete, state.startedAt]);
 
-  // Calculate board area bounds for drop detection
-  const headerHeight = insets.top + 26; // approximate header height
-  const binAreaRight = screenWidth - 20;
-  const binAreaTop = screenHeight - insets.bottom - handHeight - BIN_SIZE - 16;
+  // Convert absolute screen position to board grid coordinates
+  // accounting for the board's pan/zoom transform
+  const screenToGrid = useCallback(
+    (absX: number, absY: number) => {
+      const contY = boardContainerY.current;
+      const contH = boardContainerHeight.current;
 
+      // Board view base offset (before transforms)
+      const baseLeft = -(BOARD_SIZE - screenWidth) / 2;
+      const baseTop = -(BOARD_SIZE - screenHeight) / 2;
+
+      // Current transform values
+      const s = boardScale.value;
+      const tx = boardTranslateX.value;
+      const ty = boardTranslateY.value;
+
+      // Position relative to board container
+      const relX = absX;
+      const relY = absY - contY;
+
+      // Invert the transform: screen → board coordinates
+      // Screen pos = (boardPos - BOARD_SIZE/2) * scale + BOARD_SIZE/2 + baseLeft + tx
+      // So: boardPos = (screenPos - baseLeft - BOARD_SIZE/2 - tx) / scale + BOARD_SIZE/2
+      const boardX =
+        (relX - baseLeft - BOARD_SIZE / 2 - tx) / s + BOARD_SIZE / 2;
+      const boardY =
+        (relY - baseTop - BOARD_SIZE / 2 - ty) / s + BOARD_SIZE / 2;
+
+      const col = Math.floor(boardX / CELL_SIZE);
+      const row = Math.floor(boardY / CELL_SIZE);
+
+      return {
+        row: Math.max(0, Math.min(GRID_COUNT - 1, row)),
+        col: Math.max(0, Math.min(GRID_COUNT - 1, col)),
+      };
+    },
+    [screenWidth, screenHeight, boardScale, boardTranslateX, boardTranslateY],
+  );
+
+  // Drop zone detection
   const handleTileDragEnd = useCallback(
     (tileId: string, absX: number, absY: number) => {
       const isFromHand = state.hand.some((t) => t.id === tileId);
       const isFromBoard = Object.values(state.board).some(
         (t) => t.id === tileId,
       );
+
+      const handTop = screenHeight - handHeight;
+      const binAreaRight = screenWidth - 16;
+      const binAreaTop = handTop - BIN_SIZE - 16;
 
       // Check if dropped on bin
       if (
@@ -154,7 +213,7 @@ export default function GameScreen() {
       }
 
       // Check if dropped on hand area (below board)
-      if (absY > screenHeight - insets.bottom - handHeight) {
+      if (absY > handTop) {
         if (isFromBoard) {
           returnTile(tileId);
           if (process.env.EXPO_OS === "ios") {
@@ -164,28 +223,13 @@ export default function GameScreen() {
         return;
       }
 
-      // Dropped on board area — snap to grid
-      // Convert absolute position to board grid coordinates
-      const centerRow = Math.floor(GRID_COUNT / 2);
-      const centerCol = Math.floor(GRID_COUNT / 2);
-
-      // The board is centered on screen, so calculate relative position
-      const boardCenterX = screenWidth / 2;
-      const boardCenterY = (screenHeight - handHeight) / 2;
-
-      const relX = absX - boardCenterX;
-      const relY = absY - boardCenterY;
-
-      const col = centerCol + Math.round(relX / CELL_SIZE);
-      const row = centerRow + Math.round(relY / CELL_SIZE);
-
-      const clampedRow = Math.max(0, Math.min(GRID_COUNT - 1, row));
-      const clampedCol = Math.max(0, Math.min(GRID_COUNT - 1, col));
+      // Dropped on board area — convert screen position to grid
+      const { row, col } = screenToGrid(absX, absY);
 
       if (isFromHand) {
-        placeTile(tileId, clampedRow, clampedCol);
+        placeTile(tileId, row, col);
       } else if (isFromBoard) {
-        moveTile(tileId, clampedRow, clampedCol);
+        moveTile(tileId, row, col);
       }
 
       if (process.env.EXPO_OS === "ios") {
@@ -196,16 +240,14 @@ export default function GameScreen() {
       state.hand,
       state.board,
       state.pool.length,
-      binAreaRight,
-      binAreaTop,
       screenHeight,
-      insets.bottom,
-      handHeight,
       screenWidth,
+      handHeight,
       exchangeTile,
       returnTile,
       placeTile,
       moveTile,
+      screenToGrid,
     ],
   );
 
@@ -243,7 +285,20 @@ export default function GameScreen() {
         tilesInHand={state.hand.length}
       />
 
-      <GameBoard board={state.board} onTileDragEnd={handleTileDragEnd} />
+      <GameBoard
+        board={state.board}
+        onTileDragEnd={handleTileDragEnd}
+        scale={boardScale}
+        savedScale={boardSavedScale}
+        translateX={boardTranslateX}
+        translateY={boardTranslateY}
+        savedTranslateX={boardSavedTranslateX}
+        savedTranslateY={boardSavedTranslateY}
+        onContainerLayout={(y, h) => {
+          boardContainerY.current = y;
+          boardContainerHeight.current = h;
+        }}
+      />
 
       {/* Bin + Peel overlay */}
       <View
@@ -286,7 +341,7 @@ export default function GameScreen() {
         style={{
           position: "absolute",
           left: 16,
-          top: insets.top + headerHeight,
+          top: insets.top + 75,
           width: 125,
           height: 40,
           borderRadius: 20,

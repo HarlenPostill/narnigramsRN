@@ -1,14 +1,12 @@
-import { useCallback, useRef } from "react";
 import { View, useWindowDimensions } from "react-native";
 import {
   Gesture,
   GestureDetector,
-  GestureHandlerRootView,
 } from "react-native-gesture-handler";
 import Animated, {
-  useSharedValue,
   useAnimatedStyle,
   withSpring,
+  type SharedValue,
 } from "react-native-reanimated";
 import { DraggableTile } from "./draggable-tile";
 import { CELL_SIZE } from "./tile";
@@ -21,6 +19,13 @@ const BOARD_SIZE = GRID_COUNT * CELL_SIZE;
 interface GameBoardProps {
   board: Record<string, Tile>;
   onTileDragEnd: (tileId: string, absoluteX: number, absoluteY: number) => void;
+  scale: SharedValue<number>;
+  savedScale: SharedValue<number>;
+  translateX: SharedValue<number>;
+  translateY: SharedValue<number>;
+  savedTranslateX: SharedValue<number>;
+  savedTranslateY: SharedValue<number>;
+  onContainerLayout?: (y: number, height: number) => void;
 }
 
 function GridBackground() {
@@ -54,15 +59,18 @@ function GridBackground() {
   return <>{lines}</>;
 }
 
-export function GameBoard({ board, onTileDragEnd }: GameBoardProps) {
+export function GameBoard({
+  board,
+  onTileDragEnd,
+  scale,
+  savedScale,
+  translateX,
+  translateY,
+  savedTranslateX,
+  savedTranslateY,
+  onContainerLayout,
+}: GameBoardProps) {
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
-
-  const scale = useSharedValue(1);
-  const savedScale = useSharedValue(1);
-  const translateX = useSharedValue(0);
-  const translateY = useSharedValue(0);
-  const savedTranslateX = useSharedValue(0);
-  const savedTranslateY = useSharedValue(0);
 
   const pinch = Gesture.Pinch()
     .onUpdate((e) => {
@@ -103,7 +111,13 @@ export function GameBoard({ board, onTileDragEnd }: GameBoardProps) {
   const boardEntries = Object.entries(board);
 
   return (
-    <View style={{ flex: 1, overflow: "hidden" }}>
+    <View
+      style={{ flex: 1, overflow: "hidden" }}
+      onLayout={(e) => {
+        const { y, height } = e.nativeEvent.layout;
+        onContainerLayout?.(y, height);
+      }}
+    >
       <GestureDetector gesture={composed}>
         <Animated.View
           style={[

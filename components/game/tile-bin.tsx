@@ -1,5 +1,4 @@
-import { Image } from "expo-image";
-import { PlatformColor, Text } from "react-native";
+import { Text } from "react-native";
 import Animated from "react-native-reanimated";
 
 interface TileBinProps {
@@ -11,37 +10,45 @@ export function TileBin({ isActive, isHighlighted }: TileBinProps) {
   return (
     <Animated.View
       style={{
-        width: 56,
-        height: 56,
-        borderRadius: 28,
+        width: 64,
+        height: 77,
+        borderRadius: 12,
         borderCurve: "continuous",
-        backgroundColor: isHighlighted
-          ? "rgba(255, 59, 48, 0.2)"
-          : "rgba(142, 142, 147, 0.12)",
+        backgroundColor: "#0062FF",
+        borderTopWidth: 2,
+        borderRightWidth: 1,
+        borderBottomWidth: 1,
+        borderLeftWidth: 1,
+        borderColor: "#6FA6FF",
         justifyContent: "center",
         alignItems: "center",
+        gap: 1,
         opacity: isActive ? 1 : 0.4,
         transform: [{ scale: isHighlighted ? 1.15 : 1 }],
       }}
     >
-      <Image
-        source="sf:arrow.2.squarepath"
-        style={{ width: 24, height: 24 }}
-        tintColor={isHighlighted ? "#FF3B30" : isActive ? "#8E8E93" : "#C7C7CC"}
+      <Animated.View
+        style={{
+          width: 52,
+          height: 52,
+          borderRadius: 8,
+          borderCurve: "continuous",
+          borderTopWidth: 2,
+          borderRightWidth: 1,
+          borderLeftWidth: 1,
+          borderColor: "#000",
+          backgroundColor: isHighlighted ? "#FF3B30" : "#fff",
+        }}
       />
       <Text
         style={{
-          fontSize: 9,
-          fontWeight: "600",
-          color: isHighlighted
-            ? "#FF3B30"
-            : isActive
-              ? PlatformColor("secondaryLabel")
-              : "#C7C7CC",
+          fontSize: 10,
+          fontWeight: "800",
+          color: isHighlighted ? "#FF3B30" : isActive ? "#fff" : "#C7C7CC",
           marginTop: 2,
         }}
       >
-        +2
+        Tile Drop
       </Text>
     </Animated.View>
   );
