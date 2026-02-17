@@ -8,6 +8,7 @@ import Animated, {
   withSpring,
   type SharedValue,
 } from "react-native-reanimated";
+import { useColors } from "@/hooks/use-colors";
 import { DraggableTile } from "./draggable-tile";
 import { CELL_SIZE } from "./tile";
 import type { Tile } from "@/types/game";
@@ -28,7 +29,7 @@ interface GameBoardProps {
   onContainerLayout?: (y: number, height: number) => void;
 }
 
-function GridBackground() {
+function GridBackground({ lineColor }: { lineColor: string }) {
   const lines: React.ReactNode[] = [];
   for (let i = 0; i <= GRID_COUNT; i++) {
     lines.push(
@@ -40,7 +41,7 @@ function GridBackground() {
           left: 0,
           right: 0,
           height: 0.5,
-          backgroundColor: "rgba(0,0,0,0.06)",
+          backgroundColor: lineColor,
         }}
       />,
       <View
@@ -51,7 +52,7 @@ function GridBackground() {
           top: 0,
           bottom: 0,
           width: 0.5,
-          backgroundColor: "rgba(0,0,0,0.06)",
+          backgroundColor: lineColor,
         }}
       />
     );
@@ -71,6 +72,7 @@ export function GameBoard({
   onContainerLayout,
 }: GameBoardProps) {
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
+  const colors = useColors();
 
   const pinch = Gesture.Pinch()
     .onUpdate((e) => {
@@ -131,7 +133,7 @@ export function GameBoard({
             boardStyle,
           ]}
         >
-          <GridBackground />
+          <GridBackground lineColor={colors.gridLine} />
           {boardEntries.map(([key, tile]) => {
             const { row, col } = parseKey(key);
             return (

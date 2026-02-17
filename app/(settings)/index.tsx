@@ -1,3 +1,4 @@
+import type { Appearance } from "@/hooks/use-colors";
 import { useStorage } from "@/hooks/use-storage";
 import type {
   Difficulty,
@@ -9,6 +10,8 @@ import type {
 import { DEFAULT_SETTINGS } from "@/types/game";
 import SegmentedControl from "@react-native-segmented-control/segmented-control";
 import { PlatformColor, ScrollView, Switch, Text, View } from "react-native";
+
+const APPEARANCES: Appearance[] = ["system", "light", "dark"];
 
 const POOL_SIZES: PoolSize[] = [50, 80, 100];
 const HAND_SIZES: HandSize[] = [11, 15, 21];
@@ -50,6 +53,10 @@ export default function SettingsScreen() {
   const [settings, setSettings] = useStorage<GameSettings>(
     "settings",
     DEFAULT_SETTINGS,
+  );
+  const [appearance, setAppearance] = useStorage<Appearance>(
+    "appearance",
+    "system",
   );
 
   const update = (partial: Partial<GameSettings>) => {
@@ -130,6 +137,16 @@ export default function SettingsScreen() {
           onValueChange={(v) => update({ showTimer: v })}
         />
       </View>
+
+      {/* <SettingRow label="Appearance">
+        <SegmentedControl
+          values={APPEARANCES.map((a) => a.charAt(0).toUpperCase() + a.slice(1))}
+          selectedIndex={APPEARANCES.indexOf(appearance)}
+          onChange={({ nativeEvent }) =>
+            setAppearance(APPEARANCES[nativeEvent.selectedSegmentIndex])
+          }
+        />
+      </SettingRow> */}
     </ScrollView>
   );
 }

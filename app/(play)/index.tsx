@@ -3,6 +3,7 @@ import { Link, useRouter } from "expo-router";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { Image } from "expo-image";
 import { useStorage } from "@/hooks/use-storage";
+import { useColors } from "@/hooks/use-colors";
 import type { GameSettings, GameState } from "@/types/game";
 import { DEFAULT_SETTINGS } from "@/types/game";
 
@@ -29,26 +30,28 @@ function PresetCard({
   description,
   onPress,
   delay,
+  colors,
 }: {
   label: string;
   description: string;
   onPress: () => void;
   delay: number;
+  colors: ReturnType<typeof useColors>;
 }) {
   return (
     <Animated.View entering={FadeInDown.delay(delay).duration(400)}>
       <Pressable
         onPress={onPress}
         style={({ pressed }) => ({
-          backgroundColor: pressed ? "rgba(0,122,255,0.08)" : "white",
+          backgroundColor: pressed ? "rgba(0,122,255,0.08)" : colors.cardBg,
           borderRadius: 14,
           borderCurve: "continuous",
           padding: 16,
           gap: 4,
-          boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+          boxShadow: colors.cardShadow,
         })}
       >
-        <Text style={{ fontSize: 17, fontWeight: "600", color: "#1C1C1E" }}>
+        <Text style={{ fontSize: 17, fontWeight: "600", color: colors.textPrimary }}>
           {label}
         </Text>
         <Text style={{ fontSize: 14, color: PlatformColor("secondaryLabel") }}>
@@ -61,6 +64,7 @@ function PresetCard({
 
 export default function HomeScreen() {
   const router = useRouter();
+  const colors = useColors();
   const [settings, setSettings] = useStorage<GameSettings>("settings", DEFAULT_SETTINGS);
   const [savedGame] = useStorage<GameState | null>("current-game", null);
 
@@ -86,7 +90,7 @@ export default function HomeScreen() {
             borderCurve: "continuous",
             paddingVertical: 18,
             alignItems: "center",
-            boxShadow: "0 4px 12px rgba(0,122,255,0.3)",
+            boxShadow: colors.ctaShadow,
           })}
         >
           <Text style={{ color: "white", fontSize: 20, fontWeight: "700" }}>
@@ -101,14 +105,14 @@ export default function HomeScreen() {
           <Pressable
             onPress={() => router.push({ pathname: "/game", params: { resume: "true" } })}
             style={({ pressed }) => ({
-              backgroundColor: pressed ? "rgba(52,199,89,0.08)" : "white",
+              backgroundColor: pressed ? "rgba(52,199,89,0.08)" : colors.cardBg,
               borderRadius: 14,
               borderCurve: "continuous",
               padding: 16,
               flexDirection: "row",
               alignItems: "center",
               gap: 12,
-              boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+              boxShadow: colors.cardShadow,
             })}
           >
             <Image
@@ -117,7 +121,7 @@ export default function HomeScreen() {
               tintColor="#34C759"
             />
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 17, fontWeight: "600", color: "#1C1C1E" }}>
+              <Text style={{ fontSize: 17, fontWeight: "600", color: colors.textPrimary }}>
                 Resume Game
               </Text>
               <Text style={{ fontSize: 14, color: PlatformColor("secondaryLabel") }}>
@@ -150,6 +154,7 @@ export default function HomeScreen() {
               description={preset.description}
               onPress={() => startWithPreset(preset.settings)}
               delay={200 + i * 80}
+              colors={colors}
             />
           ))}
         </View>
@@ -171,23 +176,25 @@ export default function HomeScreen() {
         </Text>
         <View
           style={{
-            backgroundColor: "white",
+            backgroundColor: colors.cardBg,
             borderRadius: 14,
             borderCurve: "continuous",
             padding: 16,
             gap: 8,
-            boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+            boxShadow: colors.cardShadow,
           }}
         >
-          <SettingLine label="Pool Size" value={`${settings.poolSize} tiles`} />
-          <SettingLine label="Hand Size" value={`${settings.handSize} tiles`} />
+          <SettingLine label="Pool Size" value={`${settings.poolSize} tiles`} colors={colors} />
+          <SettingLine label="Hand Size" value={`${settings.handSize} tiles`} colors={colors} />
           <SettingLine
             label="Difficulty"
             value={settings.difficulty.charAt(0).toUpperCase() + settings.difficulty.slice(1)}
+            colors={colors}
           />
           <SettingLine
             label="Timer"
             value={settings.timerMode === "none" ? "None" : `${settings.timerMode} min`}
+            colors={colors}
           />
         </View>
       </View>
@@ -195,13 +202,21 @@ export default function HomeScreen() {
   );
 }
 
-function SettingLine({ label, value }: { label: string; value: string }) {
+function SettingLine({
+  label,
+  value,
+  colors,
+}: {
+  label: string;
+  value: string;
+  colors: ReturnType<typeof useColors>;
+}) {
   return (
     <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
       <Text style={{ fontSize: 15, color: PlatformColor("secondaryLabel") }}>
         {label}
       </Text>
-      <Text selectable style={{ fontSize: 15, fontWeight: "500", color: "#1C1C1E" }}>
+      <Text selectable style={{ fontSize: 15, fontWeight: "500", color: colors.textPrimary }}>
         {value}
       </Text>
     </View>

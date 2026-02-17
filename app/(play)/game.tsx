@@ -31,6 +31,7 @@ import { useStorage } from "@/hooks/use-storage";
 import { formatTime, useTimer } from "@/hooks/use-timer";
 import type { GameSettings } from "@/types/game";
 import { DEFAULT_SETTINGS } from "@/types/game";
+import { useColors } from "@/hooks/use-colors";
 import { recordGame } from "@/utils/stats-manager";
 
 export default function GameScreen() {
@@ -67,6 +68,8 @@ export default function GameScreen() {
       endGame(false);
     },
   });
+
+  const colors = useColors();
 
   const [binHighlighted, setBinHighlighted] = useState(false);
   const [showWinModal, setShowWinModal] = useState(false);
@@ -274,7 +277,7 @@ export default function GameScreen() {
   }, [timer, saveGame, router]);
 
   return (
-    <GestureHandlerRootView style={{ flex: 1, backgroundColor: "#FAFAFA" }}>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.screenBg }}>
       <GameHeader
         elapsedMs={timer.elapsedMs}
         countdownMs={timer.countdownMs}
@@ -320,7 +323,7 @@ export default function GameScreen() {
                 paddingVertical: 10,
                 borderRadius: 20,
                 borderCurve: "continuous",
-                boxShadow: "0 2px 8px rgba(52,199,89,0.4)",
+                boxShadow: colors.peelShadow,
               }}
             >
               <Text style={{ color: "white", fontWeight: "700", fontSize: 15 }}>
@@ -345,7 +348,7 @@ export default function GameScreen() {
           width: 125,
           height: 40,
           borderRadius: 20,
-          backgroundColor: "rgba(142,142,147,0.12)",
+          backgroundColor: colors.buttonMutedBg,
           justifyContent: "center",
           alignItems: "center",
         }}
@@ -372,31 +375,31 @@ export default function GameScreen() {
             left: 0,
             right: 0,
             bottom: 0,
-            backgroundColor: "rgba(0,0,0,0.5)",
+            backgroundColor: colors.overlayBg,
             justifyContent: "center",
             alignItems: "center",
           }}
         >
           <View
             style={{
-              backgroundColor: "white",
+              backgroundColor: colors.cardBg,
               borderRadius: 20,
               borderCurve: "continuous",
               padding: 32,
               alignItems: "center",
               gap: 16,
               marginHorizontal: 40,
-              boxShadow: "0 8px 32px rgba(0,0,0,0.15)",
+              boxShadow: colors.modalShadow,
             }}
           >
             <Text style={{ fontSize: 48 }}>🎉</Text>
-            <Text style={{ fontSize: 28, fontWeight: "800", color: "#1C1C1E" }}>
+            <Text style={{ fontSize: 28, fontWeight: "800", color: colors.textPrimary }}>
               You Won!
             </Text>
             <Text
               style={{
                 fontSize: 17,
-                color: "#8E8E93",
+                color: colors.textSecondary,
                 textAlign: "center",
               }}
             >
@@ -436,28 +439,28 @@ export default function GameScreen() {
             left: 0,
             right: 0,
             bottom: 0,
-            backgroundColor: "rgba(0,0,0,0.5)",
+            backgroundColor: colors.overlayBg,
             justifyContent: "center",
             alignItems: "center",
           }}
         >
           <View
             style={{
-              backgroundColor: "white",
+              backgroundColor: colors.cardBg,
               borderRadius: 20,
               borderCurve: "continuous",
               padding: 32,
               alignItems: "center",
               gap: 16,
               marginHorizontal: 40,
-              boxShadow: "0 8px 32px rgba(0,0,0,0.15)",
+              boxShadow: colors.modalShadow,
             }}
           >
             <Text style={{ fontSize: 48 }}>⏰</Text>
-            <Text style={{ fontSize: 28, fontWeight: "800", color: "#1C1C1E" }}>
+            <Text style={{ fontSize: 28, fontWeight: "800", color: colors.textPrimary }}>
               Time&apos;s Up!
             </Text>
-            <Text style={{ fontSize: 17, color: "#8E8E93" }}>
+            <Text style={{ fontSize: 17, color: colors.textSecondary }}>
               {state.hand.length} tiles remaining
             </Text>
             <Pressable

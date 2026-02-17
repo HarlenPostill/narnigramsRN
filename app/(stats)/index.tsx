@@ -2,6 +2,7 @@ import { ScrollView, View, Text, PlatformColor } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { Image } from "expo-image";
 import { useStorage } from "@/hooks/use-storage";
+import { useColors } from "@/hooks/use-colors";
 import { StatsCard } from "@/components/stats/stats-card";
 import { StreakChart } from "@/components/stats/streak-chart";
 import { formatTime } from "@/hooks/use-timer";
@@ -18,6 +19,7 @@ const EMPTY_STATS: GameStats = {
 
 export default function StatsScreen() {
   const [stats] = useStorage<GameStats>("game-stats", EMPTY_STATS);
+  const colors = useColors();
 
   if (stats.totalGames === 0) {
     return (
@@ -98,12 +100,12 @@ export default function StatsScreen() {
         <Animated.View entering={FadeInDown.delay(200).duration(400)}>
           <View
             style={{
-              backgroundColor: "white",
+              backgroundColor: colors.cardBg,
               borderRadius: 14,
               borderCurve: "continuous",
               padding: 16,
               gap: 12,
-              boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+              boxShadow: colors.cardShadow,
             }}
           >
             <Text
@@ -130,7 +132,12 @@ export default function StatsScreen() {
                 </Text>
                 <Text
                   selectable
-                  style={{ fontSize: 15, fontWeight: "600", color: "#1C1C1E", fontVariant: ["tabular-nums"] }}
+                  style={{
+                    fontSize: 15,
+                    fontWeight: "600",
+                    color: colors.textPrimary,
+                    fontVariant: ["tabular-nums"],
+                  }}
                 >
                   {formatTime(time!)}
                 </Text>

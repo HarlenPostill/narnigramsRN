@@ -1,4 +1,5 @@
 import { View, Text, PlatformColor } from "react-native";
+import { useColors } from "@/hooks/use-colors";
 
 interface StatsCardProps {
   title: string;
@@ -7,16 +8,18 @@ interface StatsCardProps {
 }
 
 export function StatsCard({ title, value, subtitle }: StatsCardProps) {
+  const colors = useColors();
+
   return (
     <View
       style={{
         flex: 1,
-        backgroundColor: "white",
+        backgroundColor: colors.cardBg,
         borderRadius: 14,
         borderCurve: "continuous",
         padding: 16,
         gap: 4,
-        boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+        boxShadow: colors.cardShadow,
       }}
     >
       <Text
@@ -35,7 +38,7 @@ export function StatsCard({ title, value, subtitle }: StatsCardProps) {
         style={{
           fontSize: 28,
           fontWeight: "700",
-          color: "#1C1C1E",
+          color: colors.textPrimary,
           fontVariant: ["tabular-nums"],
         }}
       >

@@ -1,3 +1,4 @@
+import { useColors } from "@/hooks/use-colors";
 import { Text } from "react-native";
 import Animated from "react-native-reanimated";
 
@@ -7,6 +8,8 @@ interface TileBinProps {
 }
 
 export function TileBin({ isActive, isHighlighted }: TileBinProps) {
+  const colors = useColors();
+
   return (
     <Animated.View
       style={{
@@ -36,8 +39,8 @@ export function TileBin({ isActive, isHighlighted }: TileBinProps) {
           borderTopWidth: 2,
           borderRightWidth: 1,
           borderLeftWidth: 1,
-          borderColor: "#000",
-          backgroundColor: isHighlighted ? "#FF3B30" : "#fff",
+          borderColor: colors.border,
+          backgroundColor: isHighlighted ? "#FF3B30" : colors.cardBg,
         }}
       />
       <Text

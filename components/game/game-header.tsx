@@ -1,5 +1,6 @@
 import { View, Text, PlatformColor } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useColors } from "@/hooks/use-colors";
 import { formatTime } from "@/hooks/use-timer";
 
 interface GameHeaderProps {
@@ -18,6 +19,7 @@ export function GameHeader({
   tilesInHand,
 }: GameHeaderProps) {
   const insets = useSafeAreaInsets();
+  const colors = useColors();
   const displayTime = countdownMs !== null ? countdownMs : elapsedMs;
   const isLow = countdownMs !== null && countdownMs < 60_000;
 
@@ -30,7 +32,7 @@ export function GameHeader({
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
-        backgroundColor: "rgba(0,0,0,0.03)",
+        backgroundColor: colors.headerBg,
       }}
     >
       <View style={{ flexDirection: "row", gap: 16 }}>

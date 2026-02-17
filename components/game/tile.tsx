@@ -1,3 +1,4 @@
+import { useColors } from "@/hooks/use-colors";
 import type { Tile as TileType } from "@/types/game";
 import { Text, View } from "react-native";
 
@@ -9,8 +10,9 @@ interface TileProps {
 }
 
 export function Tile({ tile, size = CELL_SIZE }: TileProps) {
-  const fontSize = size * 0.55;
-  const pointsSize = size * 0.18;
+  const colors = useColors();
+  const fontSize = size * 0.6;
+  const pointsSize = size * 0.22;
 
   return (
     <View
@@ -20,20 +22,19 @@ export function Tile({ tile, size = CELL_SIZE }: TileProps) {
         height: size,
         borderRadius: size * 0.18,
         borderCurve: "continuous",
-        borderColor: "#E7BE93",
+        borderColor: colors.tileBorder,
         borderWidth: 0.005 * size,
-        backgroundColor: "#EBD2B8",
+        backgroundColor: colors.tileBg,
         justifyContent: "center",
         alignItems: "center",
-        boxShadow:
-          "-0.769px -0.769px 1.538px 0 rgba(0, 0, 0, 0.45) inset, 0.769px 0.769px 1.538px 0 rgba(255, 255, 255, 0.55) inset",
+        boxShadow: colors.tileInsetShadow,
       }}
     >
       <Text
         style={{
           fontSize,
           fontWeight: "700",
-          color: "#3C3226",
+          color: colors.tileLetter,
           marginTop: -2,
         }}
       >
@@ -43,7 +44,7 @@ export function Tile({ tile, size = CELL_SIZE }: TileProps) {
         style={{
           fontSize: pointsSize,
           fontWeight: "600",
-          color: "#8B7D6B",
+          color: colors.tilePoints,
           position: "absolute",
           bottom: size * 0.06,
           right: size * 0.1,

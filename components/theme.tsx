@@ -3,12 +3,12 @@ import {
   DarkTheme,
   DefaultTheme,
 } from "@react-navigation/native";
-import { useColorScheme } from "react-native";
+import { useResolvedScheme } from "@/hooks/use-colors";
 
 export function Theme({ children }: { children: React.ReactNode }) {
-  const colorScheme = useColorScheme();
+  const scheme = useResolvedScheme();
   return (
-    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+    <ThemeProvider value={scheme === "dark" ? DarkTheme : DefaultTheme}>
       {children}
     </ThemeProvider>
   );

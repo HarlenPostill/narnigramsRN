@@ -1,4 +1,5 @@
 import type { Tile } from "@/types/game";
+import { useColors } from "@/hooks/use-colors";
 import { View } from "react-native";
 import Animated, { LinearTransition } from "react-native-reanimated";
 import { DraggableTile } from "./draggable-tile";
@@ -12,6 +13,8 @@ const TILE_GAP = 6;
 const HAND_TILE_SIZE = 44;
 
 export function PlayerHand({ tiles, onDragEnd }: PlayerHandProps) {
+  const colors = useColors();
+
   return (
     <View
       style={{
@@ -24,9 +27,9 @@ export function PlayerHand({ tiles, onDragEnd }: PlayerHandProps) {
         borderTopWidth: 0.5,
         borderLeftWidth: 0.5,
         borderRightWidth: 0.5,
-        borderTopColor: "rgba(0,0,0,0.1)",
-        borderLeftColor: "rgba(0,0,0,0.1)",
-        borderRightColor: "rgba(0,0,0,0.1)",
+        borderTopColor: colors.border,
+        borderLeftColor: colors.border,
+        borderRightColor: colors.border,
       }}
     >
       <Animated.View

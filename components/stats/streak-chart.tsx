@@ -1,4 +1,5 @@
 import { View, Text, PlatformColor } from "react-native";
+import { useColors } from "@/hooks/use-colors";
 import type { GameRecord } from "@/types/game";
 
 interface StreakChartProps {
@@ -7,6 +8,8 @@ interface StreakChartProps {
 }
 
 export function StreakChart({ records, days }: StreakChartProps) {
+  const colors = useColors();
+
   // Group records by day
   const now = Date.now();
   const dayBuckets: number[] = [];
@@ -26,12 +29,12 @@ export function StreakChart({ records, days }: StreakChartProps) {
   return (
     <View
       style={{
-        backgroundColor: "white",
+        backgroundColor: colors.cardBg,
         borderRadius: 14,
         borderCurve: "continuous",
         padding: 16,
         gap: 12,
-        boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+        boxShadow: colors.cardShadow,
       }}
     >
       <Text
@@ -59,7 +62,7 @@ export function StreakChart({ records, days }: StreakChartProps) {
             style={{
               flex: 1,
               height: Math.max(2, (count / maxCount) * 80),
-              backgroundColor: count > 0 ? "#007AFF" : "#E5E5EA",
+              backgroundColor: count > 0 ? "#007AFF" : colors.barEmpty,
               borderRadius: 2,
               borderCurve: "continuous",
             }}
