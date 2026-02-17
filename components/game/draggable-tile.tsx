@@ -1,15 +1,16 @@
+import type { Tile as TileType } from "@/types/game";
+import * as Haptics from "expo-haptics";
 import { useCallback } from "react";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
   runOnJS,
-  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withSequence,
+  withTiming,
 } from "react-native-reanimated";
-import * as Haptics from "expo-haptics";
-import { Tile, CELL_SIZE } from "./tile";
-import type { Tile as TileType } from "@/types/game";
+import { CELL_SIZE, Tile } from "./tile";
 
 interface DraggableTileProps {
   tile: TileType;
@@ -26,6 +27,7 @@ export function DraggableTile({
   const translateY = useSharedValue(0);
   const scale = useSharedValue(1);
   const zIndex = useSharedValue(0);
+  const opacity = useSharedValue(1);
 
   const hapticFeedback = useCallback(() => {
     if (process.env.EXPO_OS === "ios") {
@@ -37,10 +39,8 @@ export function DraggableTile({
     (absX: number, absY: number) => {
       onDragEnd(tile.id, absX, absY);
     },
-    [tile.id, onDragEnd]
+    [tile.id, onDragEnd],
   );
-
-  const snapTiming = { duration: 150, easing: Easing.out(Easing.cubic) };
 
   const gesture = Gesture.Pan()
     .onStart(() => {
@@ -54,10 +54,17 @@ export function DraggableTile({
     })
     .onEnd((e) => {
       scale.value = withTiming(1, { duration: 120 });
-      runOnJS(handleDragEnd)(e.absoluteX, e.absoluteY);
-      translateX.value = withTiming(0, snapTiming);
-      translateY.value = withTiming(0, snapTiming);
+      // Hide tile immediately so the snap-back is invisible.
+      // If the drop is valid the component unmounts before the restore fires.
+      // If invalid, the tile fades back in at its original position.
+      opacity.value = withSequence(
+        withTiming(0, { duration: 0 }),
+        withDelay(150, withTiming(1, { duration: 80 })),
+      );
+      translateX.value = 0;
+      translateY.value = 0;
       zIndex.value = 0;
+      runOnJS(handleDragEnd)(e.absoluteX, e.absoluteY);
     });
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -67,6 +74,7 @@ export function DraggableTile({
       { scale: scale.value },
     ],
     zIndex: zIndex.value,
+    opacity: opacity.value,
   }));
 
   return (
