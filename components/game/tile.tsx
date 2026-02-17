@@ -1,5 +1,5 @@
-import { View, Text } from "react-native";
 import type { Tile as TileType } from "@/types/game";
+import { Text, View } from "react-native";
 
 const CELL_SIZE = 50;
 
@@ -9,8 +9,8 @@ interface TileProps {
 }
 
 export function Tile({ tile, size = CELL_SIZE }: TileProps) {
-  const fontSize = size * 0.48;
-  const pointsSize = size * 0.22;
+  const fontSize = size * 0.55;
+  const pointsSize = size * 0.18;
 
   return (
     <View
@@ -18,12 +18,15 @@ export function Tile({ tile, size = CELL_SIZE }: TileProps) {
       style={{
         width: size,
         height: size,
-        borderRadius: size * 0.16,
+        borderRadius: size * 0.18,
         borderCurve: "continuous",
-        backgroundColor: "#F5F0E1",
+        borderColor: "#E7BE93",
+        borderWidth: 0.005 * size,
+        backgroundColor: "#EBD2B8",
         justifyContent: "center",
         alignItems: "center",
-        boxShadow: "0 1px 3px rgba(0,0,0,0.15)",
+        boxShadow:
+          "-0.769px -0.769px 1.538px 0 rgba(0, 0, 0, 0.45) inset, 0.769px 0.769px 1.538px 0 rgba(255, 255, 255, 0.55) inset",
       }}
     >
       <Text
