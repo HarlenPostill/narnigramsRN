@@ -62,6 +62,7 @@ export default function GameScreen() {
 
   const [binHighlighted, setBinHighlighted] = useState(false);
   const [showWinModal, setShowWinModal] = useState(false);
+  const [handHeight, setHandHeight] = useState(180);
   const didStart = useRef(false);
 
   // Start or restore game on mount
@@ -127,7 +128,6 @@ export default function GameScreen() {
 
   // Calculate board area bounds for drop detection
   const headerHeight = insets.top + 26; // approximate header height
-  const handHeight = 180;
   const binAreaRight = screenWidth - 20;
   const binAreaTop = screenHeight - insets.bottom - handHeight - BIN_SIZE - 16;
 
@@ -200,6 +200,7 @@ export default function GameScreen() {
       binAreaTop,
       screenHeight,
       insets.bottom,
+      handHeight,
       screenWidth,
       exchangeTile,
       returnTile,
@@ -249,7 +250,7 @@ export default function GameScreen() {
         style={{
           position: "absolute",
           right: 16,
-          bottom: handHeight + insets.bottom + 16,
+          bottom: handHeight + 16,
           alignItems: "center",
           gap: 12,
         }}
@@ -299,7 +300,10 @@ export default function GameScreen() {
         </Text>
       </Pressable>
 
-      <View style={{ paddingBottom: insets.bottom }}>
+      <View
+        style={{ paddingBottom: insets.bottom }}
+        onLayout={(e) => setHandHeight(e.nativeEvent.layout.height)}
+      >
         <PlayerHand tiles={state.hand} onDragEnd={handleTileDragEnd} />
       </View>
 
