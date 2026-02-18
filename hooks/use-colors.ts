@@ -31,7 +31,7 @@ const light = {
   // Shadows
   cardShadow: "0 1px 3px rgba(0, 0, 0, 0.08)",
   modalShadow: "0 8px 32px rgba(0, 0, 0, 0.15)",
-  peelShadow: "0 2px 8px rgba(52, 199, 89, 0.4)",
+  peelShadow: "0 2px 8px rgba(0, 122, 255, 0.3)",
   ctaShadow: "0 4px 12px rgba(0, 122, 255, 0.3)",
 
   // Bar chart

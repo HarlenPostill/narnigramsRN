@@ -87,7 +87,7 @@ export function GameBoard({
     });
 
   const pan = Gesture.Pan()
-    .minPointers(2)
+    .minPointers(1)
     .onUpdate((e) => {
       translateX.value = savedTranslateX.value + e.translationX;
       translateY.value = savedTranslateY.value + e.translationY;

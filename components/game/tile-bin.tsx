@@ -57,4 +57,4 @@ export function TileBin({ isActive, isHighlighted }: TileBinProps) {
   );
 }
 
-export const BIN_SIZE = 56;
+export const BIN_SIZE = 64;
