@@ -26,12 +26,12 @@ import { GameHeader } from "@/components/game/game-header";
 import { PlayerHand } from "@/components/game/player-hand";
 import { CELL_SIZE } from "@/components/game/tile";
 import { BIN_SIZE, TileBin } from "@/components/game/tile-bin";
+import { useColors } from "@/hooks/use-colors";
 import { useGame } from "@/hooks/use-game";
 import { useStorage } from "@/hooks/use-storage";
 import { formatTime, useTimer } from "@/hooks/use-timer";
 import type { GameSettings } from "@/types/game";
 import { DEFAULT_SETTINGS } from "@/types/game";
-import { useColors } from "@/hooks/use-colors";
 import { recordGame } from "@/utils/stats-manager";
 
 export default function GameScreen() {
@@ -197,12 +197,17 @@ export default function GameScreen() {
       );
 
       const handTop = screenHeight - handHeight;
-      const binAreaRight = screenWidth - 16;
       const binAreaTop = handTop - BIN_SIZE - 16;
+
+      // Bin position depends on handMode: right side when "right", left side when "left"
+      const binOnRight = settings.handMode === "right";
+      const binLeft = binOnRight ? screenWidth - 16 - BIN_SIZE : 16;
+      const binRight = binLeft + BIN_SIZE;
 
       // Check if dropped on bin
       if (
-        absX > binAreaRight - BIN_SIZE &&
+        absX > binLeft &&
+        absX < binRight &&
         absY > binAreaTop &&
         absY < binAreaTop + BIN_SIZE &&
         state.pool.length >= 2
@@ -246,6 +251,7 @@ export default function GameScreen() {
       screenHeight,
       screenWidth,
       handHeight,
+      settings.handMode,
       exchangeTile,
       returnTile,
       placeTile,
@@ -277,7 +283,9 @@ export default function GameScreen() {
   }, [timer, saveGame, router]);
 
   return (
-    <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.screenBg }}>
+    <GestureHandlerRootView
+      style={{ flex: 1, backgroundColor: colors.screenBg }}
+    >
       <GameHeader
         elapsedMs={timer.elapsedMs}
         countdownMs={timer.countdownMs}
@@ -308,20 +316,29 @@ export default function GameScreen() {
         style={{
           position: "absolute",
           right: 16,
+          left: 16,
           bottom: handHeight + 16,
-          alignItems: "center",
+          alignItems: "flex-end",
+          justifyContent: "flex-end",
+          flexDirection: settings.handMode === "right" ? "row" : "row-reverse",
           gap: 12,
         }}
       >
         {canPeelNow && (
-          <Animated.View entering={FadeIn} exiting={FadeOut}>
+          <Animated.View
+            entering={FadeIn}
+            exiting={FadeOut}
+            style={{ flexGrow: 1 }}
+          >
             <Pressable
               onPress={handlePeel}
               style={{
-                backgroundColor: "#34C759",
-                paddingHorizontal: 20,
-                paddingVertical: 10,
-                borderRadius: 20,
+                backgroundColor: "#0062FF",
+                paddingHorizontal: 12,
+                height: 77,
+                justifyContent: "center",
+                alignItems: "center",
+                borderRadius: 12,
                 borderCurve: "continuous",
                 boxShadow: colors.peelShadow,
               }}
@@ -343,7 +360,7 @@ export default function GameScreen() {
         onPress={handleQuit}
         style={{
           position: "absolute",
-          left: 16,
+          left: settings.handMode === "left" ? screenWidth - 16 - 125 : 16,
           top: insets.top + 75,
           width: 125,
           height: 40,
@@ -393,7 +410,13 @@ export default function GameScreen() {
             }}
           >
             <Text style={{ fontSize: 48 }}>🎉</Text>
-            <Text style={{ fontSize: 28, fontWeight: "800", color: colors.textPrimary }}>
+            <Text
+              style={{
+                fontSize: 28,
+                fontWeight: "800",
+                color: colors.textPrimary,
+              }}
+            >
               You Won!
             </Text>
             <Text
@@ -457,7 +480,13 @@ export default function GameScreen() {
             }}
           >
             <Text style={{ fontSize: 48 }}>⏰</Text>
-            <Text style={{ fontSize: 28, fontWeight: "800", color: colors.textPrimary }}>
+            <Text
+              style={{
+                fontSize: 28,
+                fontWeight: "800",
+                color: colors.textPrimary,
+              }}
+            >
               Time&apos;s Up!
             </Text>
             <Text style={{ fontSize: 17, color: colors.textSecondary }}>

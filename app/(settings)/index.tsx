@@ -3,6 +3,7 @@ import { useStorage } from "@/hooks/use-storage";
 import type {
   Difficulty,
   GameSettings,
+  HandMode,
   HandSize,
   PoolSize,
   TimerMode,
@@ -12,7 +13,7 @@ import SegmentedControl from "@react-native-segmented-control/segmented-control"
 import { PlatformColor, ScrollView, Switch, Text, View } from "react-native";
 
 // const APPEARANCES: Appearance[] = ["system", "light", "dark"];
-
+const HAND_MODE: HandMode[] = ["left", "right"];
 const POOL_SIZES: PoolSize[] = [50, 72, 100];
 const HAND_SIZES: HandSize[] = [11, 15, 21];
 const DIFFICULTIES: Difficulty[] = ["easy", "standard", "hard"];
@@ -214,6 +215,57 @@ export default function SettingsScreen() {
               onValueChange={(v) => update({ showTimer: v })}
             />
           </View>
+        </View>
+      </View>
+
+      <View style={{ gap: 8 }}>
+        <Text
+          style={{
+            fontSize: 13,
+            fontWeight: "600",
+            textTransform: "uppercase",
+            color: PlatformColor("secondaryLabel"),
+            letterSpacing: 0.5,
+            paddingHorizontal: 4,
+          }}
+        >
+          Accessibility settings
+        </Text>
+        <View
+          style={{
+            backgroundColor: colors.cardBg,
+            borderRadius: 14,
+            borderCurve: "continuous",
+            padding: 16,
+            gap: 8,
+            boxShadow: colors.cardShadow,
+          }}
+        >
+          <Text
+            style={{
+              fontSize: 13,
+              fontWeight: "600",
+              color: PlatformColor("secondaryLabel"),
+              letterSpacing: 0.5,
+              paddingHorizontal: 4,
+            }}
+          >
+            Accessibility settings will affect any ongoing game and future
+            games.
+          </Text>
+          <SettingRow label="Hand Mode">
+            <SegmentedControl
+              values={HAND_MODE.map(
+                (d) => d.charAt(0).toUpperCase() + d.slice(1),
+              )}
+              selectedIndex={HAND_MODE.indexOf(settings.handMode)}
+              onChange={({ nativeEvent }) =>
+                update({
+                  handMode: HAND_MODE[nativeEvent.selectedSegmentIndex],
+                })
+              }
+            />
+          </SettingRow>
         </View>
       </View>
 

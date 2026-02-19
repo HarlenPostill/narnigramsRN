@@ -1,7 +1,9 @@
-import { View, Text, PlatformColor } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/use-colors";
+import { useStorage } from "@/hooks/use-storage";
 import { formatTime } from "@/hooks/use-timer";
+import { DEFAULT_SETTINGS, GameSettings } from "@/types/game";
+import { PlatformColor, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 interface GameHeaderProps {
   elapsedMs: number;
@@ -23,13 +25,15 @@ export function GameHeader({
   const displayTime = countdownMs !== null ? countdownMs : elapsedMs;
   const isLow = countdownMs !== null && countdownMs < 60_000;
 
+  const [settings] = useStorage<GameSettings>("settings", DEFAULT_SETTINGS);
+
   return (
     <View
       style={{
         paddingTop: insets.top + 8,
         paddingHorizontal: 20,
         paddingBottom: 12,
-        flexDirection: "row",
+        flexDirection: settings.handMode === "right" ? "row" : "row-reverse",
         justifyContent: "space-between",
         alignItems: "center",
         backgroundColor: colors.headerBg,

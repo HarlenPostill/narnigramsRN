@@ -48,6 +48,7 @@ export function parseKey(key: string): BoardPosition {
   return { row, col };
 }
 
+export type HandMode = "left" | "right";
 export type Difficulty = "easy" | "standard" | "hard";
 export type PoolSize = 50 | 72 | 100;
 export type HandSize = 11 | 15 | 21;
@@ -55,6 +56,7 @@ export type TimerMode = "none" | 5 | 10 | 15 | 30;
 
 export interface GameSettings {
   poolSize: PoolSize;
+  handMode: HandMode;
   handSize: HandSize;
   difficulty: Difficulty;
   timerMode: TimerMode;
@@ -64,6 +66,7 @@ export interface GameSettings {
 export const DEFAULT_SETTINGS: GameSettings = {
   poolSize: 72,
   handSize: 15,
+  handMode: "right",
   difficulty: "standard",
   timerMode: "none",
   showTimer: true,

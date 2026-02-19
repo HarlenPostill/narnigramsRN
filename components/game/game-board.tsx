@@ -1,18 +1,15 @@
+import { useColors } from "@/hooks/use-colors";
+import type { Tile } from "@/types/game";
+import { parseKey } from "@/types/game";
 import { View, useWindowDimensions } from "react-native";
-import {
-  Gesture,
-  GestureDetector,
-} from "react-native-gesture-handler";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   useAnimatedStyle,
   withSpring,
   type SharedValue,
 } from "react-native-reanimated";
-import { useColors } from "@/hooks/use-colors";
 import { DraggableTile } from "./draggable-tile";
 import { CELL_SIZE } from "./tile";
-import type { Tile } from "@/types/game";
-import { parseKey } from "@/types/game";
 
 const GRID_COUNT = 40; // 40x40 grid
 const BOARD_SIZE = GRID_COUNT * CELL_SIZE;
@@ -54,7 +51,7 @@ function GridBackground({ lineColor }: { lineColor: string }) {
           width: 0.5,
           backgroundColor: lineColor,
         }}
-      />
+      />,
     );
   }
   return <>{lines}</>;
@@ -90,7 +87,7 @@ export function GameBoard({
     });
 
   const pan = Gesture.Pan()
-    .minPointers(2)
+    .minPointers(1)
     .onUpdate((e) => {
       translateX.value = savedTranslateX.value + e.translationX;
       translateY.value = savedTranslateY.value + e.translationY;
@@ -138,7 +135,7 @@ export function GameBoard({
             const { row, col } = parseKey(key);
             return (
               <View
-                key={tile.id}
+                key={`${tile.id}-${key}`}
                 style={{
                   position: "absolute",
                   left: col * CELL_SIZE,
