@@ -66,7 +66,7 @@ const dark: typeof light = {
   // Shadows
   cardShadow: "0 1px 3px rgba(0, 0, 0, 0.3)",
   modalShadow: "0 8px 32px rgba(0, 0, 0, 0.5)",
-  peelShadow: "0 2px 8px rgba(48, 209, 88, 0.3)",
+  peelShadow: "0 2px 8px rgba(0, 122, 255, 0.3)",
   ctaShadow: "0 4px 12px rgba(10, 132, 255, 0.3)",
 
   // Bar chart
