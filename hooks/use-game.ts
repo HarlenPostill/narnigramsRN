@@ -2,12 +2,16 @@ import type { GameSettings, GameState, Tile } from "@/types/game";
 import { posKey } from "@/types/game";
 import {
   canPeel,
+  canSharedPeel,
   checkWinCondition,
   createTilePool,
   drawTiles,
   exchangeTile,
+  sharedPeel,
   validateBoard,
 } from "@/utils/game-engine";
+import { getBotConfig } from "@/utils/bot-config";
+import { createBotState, botTick as botTickEngine } from "@/utils/bot-engine";
 import { storage } from "@/utils/storage";
 import { useCallback, useReducer } from "react";
 
@@ -22,7 +26,8 @@ type Action =
   | { type: "EXCHANGE_TILE"; tileId: string }
   | { type: "PEEL" }
   | { type: "TICK"; elapsedMs: number }
-  | { type: "END_GAME"; isWin: boolean };
+  | { type: "END_GAME"; isWin: boolean }
+  | { type: "BOT_TICK"; now: number };
 
 function reducer(state: GameState, action: Action): GameState {
   switch (action.type) {
@@ -32,15 +37,24 @@ function reducer(state: GameState, action: Action): GameState {
         action.settings.difficulty,
       );
       const { drawn, remaining } = drawTiles(pool, action.settings.handSize);
+
+      // In bot mode, reserve tiles for the bot's hand (virtual — just reduce pool)
+      const isBotMode = action.settings.gameMode === "bot";
+      const botHandSize = action.settings.handSize;
+      const poolAfterBot = isBotMode
+        ? remaining.slice(botHandSize)
+        : remaining;
+
       return {
         hand: drawn,
-        pool: remaining,
+        pool: poolAfterBot,
         board: {},
         startedAt: Date.now(),
         elapsedMs: 0,
         settings: action.settings,
         isComplete: false,
         isWin: false,
+        botState: isBotMode ? createBotState(botHandSize) : undefined,
       };
     }
 
@@ -120,6 +134,20 @@ function reducer(state: GameState, action: Action): GameState {
     }
 
     case "PEEL": {
+      // Bot mode: shared peel — both player and bot draw 1 tile
+      if (state.settings.gameMode === "bot") {
+        if (!canSharedPeel(state.hand, state.pool, state.board)) return state;
+        const { playerTile, botTile: _botTile, remaining } = sharedPeel(state.pool);
+        return {
+          ...state,
+          hand: [...state.hand, playerTile],
+          pool: remaining,
+          botState: state.botState
+            ? { ...state.botState, handSize: state.botState.handSize + 1 }
+            : undefined,
+        };
+      }
+      // Solo mode: original behavior
       if (!canPeel(state.hand, state.pool, state.board)) return state;
       const { drawn, remaining } = drawTiles(state.pool, 1);
       return {
@@ -135,6 +163,59 @@ function reducer(state: GameState, action: Action): GameState {
     case "END_GAME":
       return { ...state, isComplete: true, isWin: action.isWin };
 
+    case "BOT_TICK": {
+      if (!state.botState || state.isComplete) return state;
+      const difficulty = state.settings.botDifficulty ?? "medium";
+      const config = getBotConfig(difficulty);
+      const { newState: newBotState, action: botAction } = botTickEngine(
+        state.botState,
+        config,
+        state.pool.length,
+        action.now,
+      );
+
+      switch (botAction) {
+        case "none":
+          return state;
+
+        case "place":
+          return { ...state, botState: newBotState };
+
+        case "exchange": {
+          // Bot exchanges: returns 1 tile, draws 2 from pool (net: pool -1)
+          if (state.pool.length < 2) return state;
+          return {
+            ...state,
+            pool: state.pool.slice(1),
+            botState: newBotState,
+          };
+        }
+
+        case "peel": {
+          // Bot peels: both player and bot draw 1 tile
+          if (state.pool.length < 2) return state;
+          const { playerTile, botTile: _bt, remaining } = sharedPeel(state.pool);
+          return {
+            ...state,
+            hand: [...state.hand, playerTile],
+            pool: remaining,
+            botState: newBotState,
+          };
+        }
+
+        case "finish":
+          return {
+            ...state,
+            isComplete: true,
+            isWin: false,
+            botState: newBotState,
+          };
+
+        default:
+          return state;
+      }
+    }
+
     default:
       return state;
   }
@@ -149,6 +230,7 @@ const INITIAL_STATE: GameState = {
   settings: {
     poolSize: 72,
     handSize: 15,
+    handMode: "right",
     difficulty: "standard",
     timerMode: "none",
     showTimer: true,
@@ -212,8 +294,15 @@ export function useGame() {
     storage.set(SAVE_KEY, null);
   }, []);
 
+  const botTick = useCallback((now: number) => {
+    dispatch({ type: "BOT_TICK", now });
+  }, []);
+
   const boardIsValid = validateBoard(state.board);
-  const canPeelNow = canPeel(state.hand, state.pool, state.board);
+  const isBotMode = state.settings.gameMode === "bot";
+  const canPeelNow = isBotMode
+    ? canSharedPeel(state.hand, state.pool, state.board)
+    : canPeel(state.hand, state.pool, state.board);
   const hasWon = checkWinCondition(state.hand, state.pool, state.board);
 
   return {
@@ -232,5 +321,6 @@ export function useGame() {
     peel,
     tick,
     endGame,
+    botTick,
   };
 }

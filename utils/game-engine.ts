@@ -92,7 +92,28 @@ export function canPeel(
   return hand.length === 0 && pool.length > 0 && validateBoard(board);
 }
 
-function shuffle<T>(array: T[]): T[] {
+export function canSharedPeel(
+  hand: Tile[],
+  pool: Tile[],
+  board: Record<string, Tile>
+): boolean {
+  return hand.length === 0 && pool.length >= 2 && validateBoard(board);
+}
+
+export function sharedPeel(pool: Tile[]): {
+  playerTile: Tile;
+  botTile: Tile;
+  remaining: Tile[];
+} {
+  const shuffled = shuffle([...pool]);
+  return {
+    playerTile: shuffled[0],
+    botTile: shuffled[1],
+    remaining: shuffled.slice(2),
+  };
+}
+
+export function shuffle<T>(array: T[]): T[] {
   const arr = [...array];
   for (let i = arr.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));

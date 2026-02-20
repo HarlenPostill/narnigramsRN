@@ -45,6 +45,49 @@ const PRESETS: {
   },
 ];
 
+const BOT_PRESETS: {
+  label: string;
+  description: string;
+  settings: Partial<GameSettings>;
+}[] = [
+  {
+    label: "Easy",
+    description: "50 tiles, easy bot",
+    settings: {
+      poolSize: 50,
+      handSize: 11,
+      difficulty: "easy",
+      timerMode: "none",
+      gameMode: "bot",
+      botDifficulty: "easy",
+    },
+  },
+  {
+    label: "Medium",
+    description: "72 tiles, medium bot",
+    settings: {
+      poolSize: 72,
+      handSize: 15,
+      difficulty: "standard",
+      timerMode: "none",
+      gameMode: "bot",
+      botDifficulty: "medium",
+    },
+  },
+  {
+    label: "Hard",
+    description: "100 tiles, hard bot",
+    settings: {
+      poolSize: 100,
+      handSize: 21,
+      difficulty: "hard",
+      timerMode: "none",
+      gameMode: "bot",
+      botDifficulty: "hard",
+    },
+  },
+];
+
 function PresetCard({
   label,
   onPress,
@@ -192,7 +235,7 @@ export default function HomeScreen() {
         </View>
       </View>
 
-      {/* CPU Play Presets */}
+      {/* Bot Play Presets */}
       <View style={{ gap: 8 }}>
         <Text
           style={{
@@ -207,7 +250,7 @@ export default function HomeScreen() {
           Warm up with bots
         </Text>
         <View style={{ gap: 8, flexDirection: "row" }}>
-          {PRESETS.map((preset, i) => (
+          {BOT_PRESETS.map((preset, i) => (
             <PresetCard
               key={preset.label}
               label={preset.label}

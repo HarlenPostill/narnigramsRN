@@ -21,6 +21,7 @@ import {
   GameBoard,
   GRID_COUNT,
 } from "@/components/game/game-board";
+import { BotProgress } from "@/components/game/bot-progress";
 import { GameResultModal } from "@/components/game/game-result-modal";
 import { GameHeader } from "@/components/game/game-header";
 import { PlayerHand } from "@/components/game/player-hand";
@@ -58,6 +59,7 @@ export default function GameScreen() {
     peel,
     tick,
     endGame,
+    botTick,
   } = useGame();
 
   const timerMinutes =
@@ -147,6 +149,16 @@ export default function GameScreen() {
       saveGame();
     }
   }, [saveGame, state.hand.length, state.isComplete, state.startedAt]);
+
+  // Bot tick interval (100ms)
+  const isBotMode = state.settings.gameMode === "bot";
+  useEffect(() => {
+    if (!isBotMode || state.isComplete || state.startedAt === 0) return;
+    const interval = setInterval(() => {
+      botTick(Date.now());
+    }, 100);
+    return () => clearInterval(interval);
+  }, [isBotMode, state.isComplete, state.startedAt, botTick]);
 
   // Convert absolute screen position to board grid coordinates
   // accounting for the board's pan/zoom transform
@@ -366,6 +378,22 @@ export default function GameScreen() {
         </Text>
       </Pressable>
 
+      {/* Bot progress */}
+      {isBotMode && state.botState && (
+        <View
+          style={{
+            position: "absolute",
+            top: insets.top + 75,
+            [settings.handMode === "left" ? "left" : "right"]: 16,
+          }}
+        >
+          <BotProgress
+            botState={state.botState}
+            difficulty={state.settings.botDifficulty ?? "medium"}
+          />
+        </View>
+      )}
+
       <View
         style={{ paddingBottom: insets.bottom }}
         onLayout={(e) => setHandHeight(e.nativeEvent.layout.height)}
@@ -378,7 +406,11 @@ export default function GameScreen() {
         <GameResultModal
           emoji="🎉"
           title="You Won!"
-          subtitle={`Completed in ${formatTime(timer.elapsedMs)}\n${Object.keys(state.board).length} tiles placed`}
+          subtitle={
+            isBotMode
+              ? `You beat the bot in ${formatTime(timer.elapsedMs)}!\n${Object.keys(state.board).length} tiles placed`
+              : `Completed in ${formatTime(timer.elapsedMs)}\n${Object.keys(state.board).length} tiles placed`
+          }
           onDismiss={() => {
             clearSave();
             router.back();
@@ -386,8 +418,21 @@ export default function GameScreen() {
         />
       )}
 
-      {/* Game Over (timer expired) */}
-      {state.isComplete && !state.isWin && (
+      {/* Bot finished first — loss */}
+      {state.isComplete && !state.isWin && isBotMode && (
+        <GameResultModal
+          emoji="🤖"
+          title="Bot Wins!"
+          subtitle={`The bot finished first.\n${state.hand.length} tiles remaining in your hand`}
+          onDismiss={() => {
+            clearSave();
+            router.back();
+          }}
+        />
+      )}
+
+      {/* Game Over (timer expired) — solo only */}
+      {state.isComplete && !state.isWin && !isBotMode && (
         <GameResultModal
           emoji="⏰"
           title="Time's Up!"

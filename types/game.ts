@@ -54,6 +54,16 @@ export type PoolSize = 50 | 72 | 100;
 export type HandSize = 11 | 15 | 21;
 export type TimerMode = "none" | 5 | 10 | 15 | 30;
 
+export type BotDifficulty = "easy" | "medium" | "hard";
+export type GameMode = "solo" | "bot";
+
+export interface BotState {
+  handSize: number;
+  tilesPlaced: number;
+  isFinished: boolean;
+  nextActionAt: number; // timestamp when bot acts next
+}
+
 export interface GameSettings {
   poolSize: PoolSize;
   handMode: HandMode;
@@ -61,6 +71,8 @@ export interface GameSettings {
   difficulty: Difficulty;
   timerMode: TimerMode;
   showTimer: boolean;
+  gameMode?: GameMode;
+  botDifficulty?: BotDifficulty;
 }
 
 export const DEFAULT_SETTINGS: GameSettings = {
@@ -81,6 +93,7 @@ export interface GameState {
   settings: GameSettings;
   isComplete: boolean;
   isWin: boolean;
+  botState?: BotState;
 }
 
 export interface GameRecord {
