@@ -1,9 +1,10 @@
+import { StatsCard } from "@/components/stats/stats-card";
 import { useColors } from "@/hooks/use-colors";
 import { useStorage } from "@/hooks/use-storage";
-import type { GameSettings, GameState } from "@/types/game";
+import type { GameSettings, GameState, GameStats } from "@/types/game";
 import { DEFAULT_SETTINGS } from "@/types/game";
-import { Image } from "expo-image";
 import { useRouter } from "expo-router";
+import { SymbolView } from "expo-symbols";
 import { PlatformColor, Pressable, ScrollView, Text, View } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 
@@ -46,24 +47,27 @@ const PRESETS: {
 
 function PresetCard({
   label,
-  description,
   onPress,
   delay,
   colors,
 }: {
   label: string;
-  description: string;
   onPress: () => void;
   delay: number;
   colors: ReturnType<typeof useColors>;
 }) {
   return (
-    <Animated.View entering={FadeInDown.delay(delay).duration(400)}>
+    <Animated.View
+      entering={FadeInDown.delay(delay).duration(400)}
+      style={{ flexGrow: 1, width: "0%" }}
+    >
       <Pressable
         onPress={onPress}
         style={({ pressed }) => ({
-          backgroundColor: pressed ? "rgba(0,122,255,0.08)" : colors.cardBg,
+          backgroundColor: pressed ? "#0066DD20" : colors.cardBg,
           borderRadius: 14,
+          alignItems: "center",
+          flexGrow: 1,
           borderCurve: "continuous",
           padding: 16,
           gap: 4,
@@ -71,21 +75,29 @@ function PresetCard({
         })}
       >
         <Text
-          style={{ fontSize: 17, fontWeight: "600", color: colors.textPrimary }}
+          style={{ fontSize: 13, fontWeight: "700", color: colors.textPrimary }}
         >
           {label}
-        </Text>
-        <Text style={{ fontSize: 14, color: PlatformColor("secondaryLabel") }}>
-          {description}
         </Text>
       </Pressable>
     </Animated.View>
   );
 }
 
+const EMPTY_STATS: GameStats = {
+  totalGames: 0,
+  totalWins: 0,
+  currentStreak: 0,
+  bestStreak: 0,
+  bestTimes: {},
+  records: [],
+};
+
 export default function HomeScreen() {
   const router = useRouter();
   const colors = useColors();
+  const [stats] = useStorage<GameStats>("game-stats", EMPTY_STATS);
+
   const [settings, setSettings] = useStorage<GameSettings>(
     "settings",
     DEFAULT_SETTINGS,
@@ -105,22 +117,130 @@ export default function HomeScreen() {
       contentInsetAdjustmentBehavior="automatic"
       contentContainerStyle={{ padding: 20, gap: 24 }}
     >
+      <View style={{ gap: 12, flexDirection: "row", alignItems: "center" }}>
+        <StatsCard
+          title="streak"
+          value={String(stats.currentStreak)}
+          icon="flame.fill"
+          iconColor="#E96812"
+        />
+        <Pressable
+          style={{ flexGrow: 1 }}
+          onPress={() => router.push("/(play)/rank")}
+        >
+          <StatsCard
+            hasInfo
+            title="Rating"
+            value={"800"}
+            icon="trophy.fill"
+            iconColor="#FFC800"
+          />
+        </Pressable>
+      </View>
+
       {/* New Game Button */}
-      <Animated.View entering={FadeInDown.duration(400)}>
+      <Animated.View entering={FadeInDown.delay(0).duration(400)}>
         <Pressable
           onPress={() => router.push("/game")}
           style={({ pressed }) => ({
             backgroundColor: pressed ? "#0066DD" : "#007AFF",
-            borderRadius: 16,
+            borderRadius: 14,
             borderCurve: "continuous",
-            paddingVertical: 18,
+            padding: 16,
+            flexDirection: "row",
             alignItems: "center",
+            gap: 12,
             boxShadow: colors.ctaShadow,
           })}
         >
-          <Text style={{ color: "white", fontSize: 20, fontWeight: "700" }}>
-            New Game
-          </Text>
+          <View
+            style={{
+              flex: 1,
+              flexDirection: "row",
+              justifyContent: "space-between",
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 16,
+                fontWeight: "600",
+                color: colors.cardBg,
+              }}
+            >
+              Play Ranked
+            </Text>
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 12 }}
+            >
+              <Text
+                style={{
+                  fontSize: 16,
+                  fontWeight: "600",
+                  textTransform: "uppercase",
+                  color: colors.cardBg,
+                }}
+              >
+                GOLD
+              </Text>
+              <SymbolView
+                size={16}
+                name={"trophy.fill"}
+                tintColor={colors.cardBg}
+              />
+            </View>
+          </View>
+        </Pressable>
+      </Animated.View>
+
+      {/* New Game Button */}
+      <Animated.View entering={FadeInDown.delay(50).duration(400)}>
+        <Pressable
+          onPress={() => router.push("/game")}
+          style={({ pressed }) => ({
+            backgroundColor: pressed ? "#0066DD20" : colors.cardBg,
+            borderRadius: 14,
+            borderCurve: "continuous",
+            padding: 16,
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 12,
+            borderColor: pressed ? "#0066DD" : "#007AFF",
+            borderWidth: 2,
+            boxShadow: colors.ctaShadow,
+          })}
+        >
+          <View
+            style={{
+              flex: 1,
+              flexDirection: "row",
+              justifyContent: "space-between",
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 16,
+                fontWeight: "600",
+                color: "#007AFF",
+              }}
+            >
+              Play Solo
+            </Text>
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 12 }}
+            >
+              <Text
+                style={{
+                  fontSize: 16,
+                  fontWeight: "600",
+                  textTransform: "uppercase",
+                  color: "#007AFF",
+                }}
+              >
+                Quick
+              </Text>
+              <SymbolView size={16} name={"person.fill"} />
+            </View>
+          </View>
         </Pressable>
       </Animated.View>
 
@@ -132,7 +252,7 @@ export default function HomeScreen() {
               router.push({ pathname: "/game", params: { resume: "true" } })
             }
             style={({ pressed }) => ({
-              backgroundColor: pressed ? "rgba(52,199,89,0.08)" : colors.cardBg,
+              backgroundColor: pressed ? "#0066DD20" : colors.cardBg,
               borderRadius: 14,
               borderCurve: "continuous",
               padding: 16,
@@ -142,27 +262,41 @@ export default function HomeScreen() {
               boxShadow: colors.cardShadow,
             })}
           >
-            <Image
-              source="sf:play.circle.fill"
-              style={{ width: 28, height: 28 }}
-              tintColor="#34C759"
-            />
-            <View style={{ flex: 1 }}>
+            <View
+              style={{
+                flex: 1,
+                flexDirection: "row",
+                justifyContent: "space-between",
+              }}
+            >
               <Text
                 style={{
-                  fontSize: 17,
+                  fontSize: 16,
                   fontWeight: "600",
                   color: colors.textPrimary,
                 }}
               >
                 Resume Game
               </Text>
-              <Text
-                style={{ fontSize: 14, color: PlatformColor("secondaryLabel") }}
+              <View
+                style={{ flexDirection: "row", alignItems: "center", gap: 12 }}
               >
-                {savedGame.hand.length} tiles in hand ·{" "}
-                {Object.keys(savedGame.board).length} placed
-              </Text>
+                <Text
+                  style={{
+                    fontSize: 16,
+                    fontWeight: "600",
+                    textTransform: "uppercase",
+                    color: PlatformColor("secondaryLabel"),
+                  }}
+                >
+                  {savedGame.pool.length} Tiles Left
+                </Text>
+                <SymbolView
+                  size={16}
+                  name={"arrowshape.turn.up.forward.fill"}
+                  tintColor={PlatformColor("secondaryLabel")}
+                />
+              </View>
             </View>
           </Pressable>
         </Animated.View>
@@ -180,14 +314,13 @@ export default function HomeScreen() {
             paddingHorizontal: 4,
           }}
         >
-          Quick Play
+          Quick solo games
         </Text>
-        <View style={{ gap: 8 }}>
+        <View style={{ gap: 8, flexDirection: "row" }}>
           {PRESETS.map((preset, i) => (
             <PresetCard
               key={preset.label}
               label={preset.label}
-              description={preset.description}
               onPress={() => startWithPreset(preset.settings)}
               delay={200 + i * 80}
               colors={colors}
@@ -196,7 +329,7 @@ export default function HomeScreen() {
         </View>
       </View>
 
-      {/* Current Settings */}
+      {/* CPU Play Presets */}
       <View style={{ gap: 8 }}>
         <Text
           style={{
@@ -208,71 +341,20 @@ export default function HomeScreen() {
             paddingHorizontal: 4,
           }}
         >
-          Current Settings
+          Warm up with bots
         </Text>
-        <View
-          style={{
-            backgroundColor: colors.cardBg,
-            borderRadius: 14,
-            borderCurve: "continuous",
-            padding: 16,
-            gap: 8,
-            boxShadow: colors.cardShadow,
-          }}
-        >
-          <SettingLine
-            label="Pool Size"
-            value={`${settings.poolSize} tiles`}
-            colors={colors}
-          />
-          <SettingLine
-            label="Hand Size"
-            value={`${settings.handSize} tiles`}
-            colors={colors}
-          />
-          <SettingLine
-            label="Difficulty"
-            value={
-              settings.difficulty.charAt(0).toUpperCase() +
-              settings.difficulty.slice(1)
-            }
-            colors={colors}
-          />
-          <SettingLine
-            label="Timer"
-            value={
-              settings.timerMode === "none"
-                ? "None"
-                : `${settings.timerMode} min`
-            }
-            colors={colors}
-          />
+        <View style={{ gap: 8, flexDirection: "row" }}>
+          {PRESETS.map((preset, i) => (
+            <PresetCard
+              key={preset.label}
+              label={preset.label}
+              onPress={() => startWithPreset(preset.settings)}
+              delay={200 + i * 80}
+              colors={colors}
+            />
+          ))}
         </View>
       </View>
     </ScrollView>
-  );
-}
-
-function SettingLine({
-  label,
-  value,
-  colors,
-}: {
-  label: string;
-  value: string;
-  colors: ReturnType<typeof useColors>;
-}) {
-  return (
-    <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-      <Text style={{ fontSize: 15, color: PlatformColor("secondaryLabel") }}>
-        {label}
-      </Text>
-      <Text
-        selectable
-        style={{ fontSize: 15, fontWeight: "500", color: colors.textPrimary }}
-      >
-        {value}
-      </Text>
-    </View>
   );
 }

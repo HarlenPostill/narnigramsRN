@@ -1,19 +1,30 @@
-import { View, Text, PlatformColor } from "react-native";
 import { useColors } from "@/hooks/use-colors";
+import { SymbolView } from "expo-symbols";
+import { PlatformColor, Text, View } from "react-native";
 
 interface StatsCardProps {
   title: string;
   value: string;
+  icon?: string;
+  iconColor?: string;
   subtitle?: string;
+  hasInfo?: boolean;
 }
 
-export function StatsCard({ title, value, subtitle }: StatsCardProps) {
+export function StatsCard({
+  title,
+  value,
+  icon,
+  iconColor,
+  subtitle,
+  hasInfo,
+}: StatsCardProps) {
   const colors = useColors();
 
   return (
     <View
       style={{
-        flex: 1,
+        flexGrow: 1,
         backgroundColor: colors.cardBg,
         borderRadius: 14,
         borderCurve: "continuous",
@@ -22,17 +33,41 @@ export function StatsCard({ title, value, subtitle }: StatsCardProps) {
         boxShadow: colors.cardShadow,
       }}
     >
-      <Text
+      <View
         style={{
-          fontSize: 12,
-          fontWeight: "600",
-          color: PlatformColor("secondaryLabel"),
-          textTransform: "uppercase",
-          letterSpacing: 0.3,
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
         }}
       >
-        {title}
-      </Text>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+          <Text
+            style={{
+              fontSize: 12,
+              fontWeight: "600",
+              color: PlatformColor("secondaryLabel"),
+              textTransform: "uppercase",
+              letterSpacing: 0.3,
+            }}
+          >
+            {title}
+          </Text>
+          {hasInfo && (
+            <SymbolView
+              name={"info.circle.fill"}
+              size={12}
+              tintColor={PlatformColor("secondaryLabel")}
+            />
+          )}
+        </View>
+        {icon && (
+          <SymbolView
+            name={icon as any}
+            size={20}
+            tintColor={iconColor || colors.textSecondary}
+          />
+        )}
+      </View>
       <Text
         selectable
         style={{

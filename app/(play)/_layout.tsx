@@ -22,6 +22,13 @@ export default function PlayLayout() {
         options={{ title: "Narnigrams", headerLargeTitle: true }}
       />
       <Stack.Screen
+        name="rank"
+        options={{
+          title: "Rating",
+          headerLargeTitleEnabled: true,
+        }}
+      />
+      <Stack.Screen
         name="game"
         options={{
           title: "Game",
