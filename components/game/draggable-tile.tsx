@@ -1,5 +1,4 @@
 import type { Tile as TileType } from "@/types/game";
-import * as Haptics from "expo-haptics";
 import { useCallback } from "react";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
@@ -10,6 +9,7 @@ import Animated, {
   withSequence,
   withTiming,
 } from "react-native-reanimated";
+import { lightImpact } from "@/utils/haptics";
 import { CELL_SIZE, Tile } from "./tile";
 
 interface DraggableTileProps {
@@ -30,9 +30,7 @@ export function DraggableTile({
   const opacity = useSharedValue(1);
 
   const hapticFeedback = useCallback(() => {
-    if (process.env.EXPO_OS === "ios") {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }
+    lightImpact();
   }, []);
 
   const handleDragEnd = useCallback(

@@ -1,10 +1,10 @@
+import { ActionButton } from "@/components/home/action-button";
 import { StatsCard } from "@/components/stats/stats-card";
 import { useColors } from "@/hooks/use-colors";
 import { useStorage } from "@/hooks/use-storage";
 import type { GameSettings, GameState, GameStats } from "@/types/game";
-import { DEFAULT_SETTINGS } from "@/types/game";
+import { DEFAULT_SETTINGS, EMPTY_STATS } from "@/types/game";
 import { useRouter } from "expo-router";
-import { SymbolView } from "expo-symbols";
 import { PlatformColor, Pressable, ScrollView, Text, View } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 
@@ -84,15 +84,6 @@ function PresetCard({
   );
 }
 
-const EMPTY_STATS: GameStats = {
-  totalGames: 0,
-  totalWins: 0,
-  currentStreak: 0,
-  bestStreak: 0,
-  bestTimes: {},
-  records: [],
-};
-
 export default function HomeScreen() {
   const router = useRouter();
   const colors = useColors();
@@ -138,168 +129,40 @@ export default function HomeScreen() {
         </Pressable>
       </View>
 
-      {/* New Game Button */}
-      <Animated.View entering={FadeInDown.delay(0).duration(400)}>
-        <Pressable
-          onPress={() => router.push("/game")}
-          style={({ pressed }) => ({
-            backgroundColor: pressed ? "#0066DD" : "#007AFF",
-            borderRadius: 14,
-            borderCurve: "continuous",
-            padding: 16,
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 12,
-            boxShadow: colors.ctaShadow,
-          })}
-        >
-          <View
-            style={{
-              flex: 1,
-              flexDirection: "row",
-              justifyContent: "space-between",
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 16,
-                fontWeight: "600",
-                color: colors.cardBg,
-              }}
-            >
-              Play Ranked
-            </Text>
-            <View
-              style={{ flexDirection: "row", alignItems: "center", gap: 12 }}
-            >
-              <Text
-                style={{
-                  fontSize: 16,
-                  fontWeight: "600",
-                  textTransform: "uppercase",
-                  color: colors.cardBg,
-                }}
-              >
-                GOLD
-              </Text>
-              <SymbolView
-                size={16}
-                name={"trophy.fill"}
-                tintColor={colors.cardBg}
-              />
-            </View>
-          </View>
-        </Pressable>
-      </Animated.View>
+      {/* Play Ranked */}
+      <ActionButton
+        label="Play Ranked"
+        rightLabel="GOLD"
+        iconName="trophy.fill"
+        onPress={() => router.push("/game")}
+        variant="primary"
+        delay={0}
+      />
 
-      {/* New Game Button */}
-      <Animated.View entering={FadeInDown.delay(50).duration(400)}>
-        <Pressable
-          onPress={() => router.push("/game")}
-          style={({ pressed }) => ({
-            backgroundColor: pressed ? "#0066DD20" : colors.cardBg,
-            borderRadius: 14,
-            borderCurve: "continuous",
-            padding: 16,
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 12,
-            borderColor: pressed ? "#0066DD" : "#007AFF",
-            borderWidth: 2,
-            boxShadow: colors.ctaShadow,
-          })}
-        >
-          <View
-            style={{
-              flex: 1,
-              flexDirection: "row",
-              justifyContent: "space-between",
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 16,
-                fontWeight: "600",
-                color: "#007AFF",
-              }}
-            >
-              Play Solo
-            </Text>
-            <View
-              style={{ flexDirection: "row", alignItems: "center", gap: 12 }}
-            >
-              <Text
-                style={{
-                  fontSize: 16,
-                  fontWeight: "600",
-                  textTransform: "uppercase",
-                  color: "#007AFF",
-                }}
-              >
-                Quick
-              </Text>
-              <SymbolView size={16} name={"person.fill"} />
-            </View>
-          </View>
-        </Pressable>
-      </Animated.View>
+      {/* Play Solo */}
+      <ActionButton
+        label="Play Solo"
+        rightLabel="Quick"
+        iconName="person.fill"
+        onPress={() => router.push("/game")}
+        variant="outline"
+        delay={50}
+      />
 
       {/* Resume Game */}
       {hasSavedGame && (
-        <Animated.View entering={FadeInDown.delay(100).duration(400)}>
-          <Pressable
-            onPress={() =>
-              router.push({ pathname: "/game", params: { resume: "true" } })
-            }
-            style={({ pressed }) => ({
-              backgroundColor: pressed ? "#0066DD20" : colors.cardBg,
-              borderRadius: 14,
-              borderCurve: "continuous",
-              padding: 16,
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 12,
-              boxShadow: colors.cardShadow,
-            })}
-          >
-            <View
-              style={{
-                flex: 1,
-                flexDirection: "row",
-                justifyContent: "space-between",
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: 16,
-                  fontWeight: "600",
-                  color: colors.textPrimary,
-                }}
-              >
-                Resume Game
-              </Text>
-              <View
-                style={{ flexDirection: "row", alignItems: "center", gap: 12 }}
-              >
-                <Text
-                  style={{
-                    fontSize: 16,
-                    fontWeight: "600",
-                    textTransform: "uppercase",
-                    color: PlatformColor("secondaryLabel"),
-                  }}
-                >
-                  {savedGame.pool.length} Tiles Left
-                </Text>
-                <SymbolView
-                  size={16}
-                  name={"arrowshape.turn.up.forward.fill"}
-                  tintColor={PlatformColor("secondaryLabel")}
-                />
-              </View>
-            </View>
-          </Pressable>
-        </Animated.View>
+        <ActionButton
+          label="Resume Game"
+          rightLabel={`${savedGame.pool.length} Tiles Left`}
+          iconName="arrowshape.turn.up.forward.fill"
+          onPress={() =>
+            router.push({ pathname: "/game", params: { resume: "true" } })
+          }
+          variant="default"
+          delay={100}
+          rightLabelColor={PlatformColor("secondaryLabel") as unknown as string}
+          iconTintColor={PlatformColor("secondaryLabel") as unknown as string}
+        />
       )}
 
       {/* Quick Play Presets */}

@@ -6,16 +6,7 @@ import { useColors } from "@/hooks/use-colors";
 import { StatsCard } from "@/components/stats/stats-card";
 import { StreakChart } from "@/components/stats/streak-chart";
 import { formatTime } from "@/hooks/use-timer";
-import type { GameStats } from "@/types/game";
-
-const EMPTY_STATS: GameStats = {
-  totalGames: 0,
-  totalWins: 0,
-  currentStreak: 0,
-  bestStreak: 0,
-  bestTimes: {},
-  records: [],
-};
+import { EMPTY_STATS, type GameStats } from "@/types/game";
 
 export default function StatsScreen() {
   const [stats] = useStorage<GameStats>("game-stats", EMPTY_STATS);

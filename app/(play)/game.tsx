@@ -1,4 +1,3 @@
-import * as Haptics from "expo-haptics";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -22,6 +21,7 @@ import {
   GameBoard,
   GRID_COUNT,
 } from "@/components/game/game-board";
+import { GameResultModal } from "@/components/game/game-result-modal";
 import { GameHeader } from "@/components/game/game-header";
 import { PlayerHand } from "@/components/game/player-hand";
 import { CELL_SIZE } from "@/components/game/tile";
@@ -32,6 +32,7 @@ import { useStorage } from "@/hooks/use-storage";
 import { formatTime, useTimer } from "@/hooks/use-timer";
 import type { GameSettings } from "@/types/game";
 import { DEFAULT_SETTINGS } from "@/types/game";
+import { lightImpact, mediumImpact, successNotification } from "@/utils/haptics";
 import { recordGame } from "@/utils/stats-manager";
 
 export default function GameScreen() {
@@ -116,9 +117,7 @@ export default function GameScreen() {
     if (hasWon && !state.isComplete) {
       timer.pause();
       endGame(true);
-      if (process.env.EXPO_OS === "ios") {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      }
+      successNotification();
       recordGame({
         id: `game-${Date.now()}`,
         date: new Date().toISOString(),
@@ -213,9 +212,7 @@ export default function GameScreen() {
         state.pool.length >= 2
       ) {
         exchangeTile(tileId);
-        if (process.env.EXPO_OS === "ios") {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-        }
+        mediumImpact();
         setBinHighlighted(false);
         return;
       }
@@ -224,9 +221,7 @@ export default function GameScreen() {
       if (absY > handTop) {
         if (isFromBoard) {
           returnTile(tileId);
-          if (process.env.EXPO_OS === "ios") {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          }
+          lightImpact();
         }
         return;
       }
@@ -240,9 +235,7 @@ export default function GameScreen() {
         moveTile(tileId, row, col);
       }
 
-      if (process.env.EXPO_OS === "ios") {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      }
+      lightImpact();
     },
     [
       state.hand,
@@ -262,9 +255,7 @@ export default function GameScreen() {
 
   const handlePeel = useCallback(() => {
     peel();
-    if (process.env.EXPO_OS === "ios") {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    }
+    mediumImpact();
   }, [peel]);
 
   const handleQuit = useCallback(() => {
@@ -384,134 +375,28 @@ export default function GameScreen() {
 
       {/* Win Modal */}
       {showWinModal && (
-        <Animated.View
-          entering={FadeIn}
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: colors.overlayBg,
-            justifyContent: "center",
-            alignItems: "center",
+        <GameResultModal
+          emoji="🎉"
+          title="You Won!"
+          subtitle={`Completed in ${formatTime(timer.elapsedMs)}\n${Object.keys(state.board).length} tiles placed`}
+          onDismiss={() => {
+            clearSave();
+            router.back();
           }}
-        >
-          <View
-            style={{
-              backgroundColor: colors.cardBg,
-              borderRadius: 20,
-              borderCurve: "continuous",
-              padding: 32,
-              alignItems: "center",
-              gap: 16,
-              marginHorizontal: 40,
-              boxShadow: colors.modalShadow,
-            }}
-          >
-            <Text style={{ fontSize: 48 }}>🎉</Text>
-            <Text
-              style={{
-                fontSize: 28,
-                fontWeight: "800",
-                color: colors.textPrimary,
-              }}
-            >
-              You Won!
-            </Text>
-            <Text
-              style={{
-                fontSize: 17,
-                color: colors.textSecondary,
-                textAlign: "center",
-              }}
-            >
-              Completed in {formatTime(timer.elapsedMs)}
-              {"\n"}
-              {Object.keys(state.board).length} tiles placed
-            </Text>
-            <Pressable
-              onPress={() => {
-                clearSave();
-                router.back();
-              }}
-              style={{
-                backgroundColor: "#007AFF",
-                paddingHorizontal: 32,
-                paddingVertical: 14,
-                borderRadius: 14,
-                borderCurve: "continuous",
-                marginTop: 8,
-              }}
-            >
-              <Text style={{ color: "white", fontWeight: "600", fontSize: 17 }}>
-                Done
-              </Text>
-            </Pressable>
-          </View>
-        </Animated.View>
+        />
       )}
 
       {/* Game Over (timer expired) */}
       {state.isComplete && !state.isWin && (
-        <Animated.View
-          entering={FadeIn}
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: colors.overlayBg,
-            justifyContent: "center",
-            alignItems: "center",
+        <GameResultModal
+          emoji="⏰"
+          title="Time's Up!"
+          subtitle={`${state.hand.length} tiles remaining`}
+          onDismiss={() => {
+            clearSave();
+            router.back();
           }}
-        >
-          <View
-            style={{
-              backgroundColor: colors.cardBg,
-              borderRadius: 20,
-              borderCurve: "continuous",
-              padding: 32,
-              alignItems: "center",
-              gap: 16,
-              marginHorizontal: 40,
-              boxShadow: colors.modalShadow,
-            }}
-          >
-            <Text style={{ fontSize: 48 }}>⏰</Text>
-            <Text
-              style={{
-                fontSize: 28,
-                fontWeight: "800",
-                color: colors.textPrimary,
-              }}
-            >
-              Time&apos;s Up!
-            </Text>
-            <Text style={{ fontSize: 17, color: colors.textSecondary }}>
-              {state.hand.length} tiles remaining
-            </Text>
-            <Pressable
-              onPress={() => {
-                clearSave();
-                router.back();
-              }}
-              style={{
-                backgroundColor: "#007AFF",
-                paddingHorizontal: 32,
-                paddingVertical: 14,
-                borderRadius: 14,
-                borderCurve: "continuous",
-                marginTop: 8,
-              }}
-            >
-              <Text style={{ color: "white", fontWeight: "600", fontSize: 17 }}>
-                Done
-              </Text>
-            </Pressable>
-          </View>
-        </Animated.View>
+        />
       )}
     </GestureHandlerRootView>
   );

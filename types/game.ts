@@ -103,6 +103,15 @@ export interface GameStats {
   records: GameRecord[];
 }
 
+export const EMPTY_STATS: GameStats = {
+  totalGames: 0,
+  totalWins: 0,
+  currentStreak: 0,
+  bestStreak: 0,
+  bestTimes: {},
+  records: [],
+};
+
 export const LETTER_POINTS: Record<Letter, number> = {
   A: 1,
   B: 3,
