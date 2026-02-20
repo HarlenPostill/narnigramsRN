@@ -1,7 +1,8 @@
+import { useColors } from "@/hooks/use-colors";
 import { Stack } from "expo-router/stack";
-import { PlatformColor } from "react-native";
 
 export default function PlayLayout() {
+  const colors = useColors();
   return (
     <Stack
       screenOptions={{
@@ -11,7 +12,7 @@ export default function PlayLayout() {
         headerLargeTitleShadowVisible: false,
         headerLargeStyle: { backgroundColor: "transparent" },
         headerTitleStyle: {
-          color: PlatformColor("label") as unknown as string,
+          color: colors.textPrimary,
         },
         headerBlurEffect: "none",
         headerBackButtonDisplayMode: "minimal",
@@ -32,7 +33,6 @@ export default function PlayLayout() {
         name="game"
         options={{
           title: "Game",
-          presentation: "fullScreenModal",
           headerShown: false,
         }}
       />

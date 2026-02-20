@@ -1,7 +1,9 @@
+import { useColors } from "@/hooks/use-colors";
 import { Stack } from "expo-router/stack";
-import { PlatformColor } from "react-native";
 
 export default function StatsLayout() {
+  const colors = useColors();
+
   return (
     <Stack
       screenOptions={{
@@ -9,7 +11,7 @@ export default function StatsLayout() {
         headerShadowVisible: false,
         headerLargeTitleShadowVisible: false,
         headerLargeStyle: { backgroundColor: "transparent" },
-        headerTitleStyle: { color: PlatformColor("label") as unknown as string },
+        headerTitleStyle: { color: colors.textSecondary },
         headerBlurEffect: "none",
       }}
     >

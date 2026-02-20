@@ -1,5 +1,5 @@
 import { useColors } from "@/hooks/use-colors";
-import { PlatformColor, Text, View } from "react-native";
+import { Text, View } from "react-native";
 
 interface SettingsSectionProps {
   title: string;
@@ -21,7 +21,7 @@ export function SettingsSection({
           fontSize: 13,
           fontWeight: "600",
           textTransform: "uppercase",
-          color: PlatformColor("secondaryLabel"),
+          color: colors.textSecondary,
           letterSpacing: 0.5,
           paddingHorizontal: 4,
         }}
@@ -42,7 +42,7 @@ export function SettingsSection({
           style={{
             fontSize: 13,
             fontWeight: "600",
-            color: PlatformColor("secondaryLabel"),
+            color: colors.textSecondary,
             letterSpacing: 0.5,
             paddingHorizontal: 4,
           }}

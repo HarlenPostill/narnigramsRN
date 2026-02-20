@@ -1,6 +1,6 @@
 import { useColors } from "@/hooks/use-colors";
 import { SymbolView } from "expo-symbols";
-import { PlatformColor, Text, View } from "react-native";
+import { Text, View } from "react-native";
 
 const RANK_TIERS = [
   { name: "Bronze", color: "#D2A36A", rating: 300 },
@@ -36,7 +36,7 @@ export function RankLadder() {
           style={{
             fontSize: 12,
             fontWeight: "600",
-            color: PlatformColor("secondaryLabel"),
+            color: colors.textSecondary,
             textTransform: "uppercase",
             letterSpacing: 0.3,
           }}
@@ -58,11 +58,7 @@ export function RankLadder() {
       >
         {RANK_TIERS.map((tier) => (
           <View key={tier.name} style={{ gap: 6, alignItems: "center" }}>
-            <SymbolView
-              name={"trophy.fill"}
-              size={16}
-              tintColor={tier.color}
-            />
+            <SymbolView name={"trophy.fill"} size={16} tintColor={tier.color} />
             <Text
               style={{
                 fontSize: 13,

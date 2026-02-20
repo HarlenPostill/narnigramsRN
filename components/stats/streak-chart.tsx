@@ -1,6 +1,6 @@
-import { View, Text, PlatformColor } from "react-native";
 import { useColors } from "@/hooks/use-colors";
 import type { GameRecord } from "@/types/game";
+import { Text, View } from "react-native";
 
 interface StreakChartProps {
   records: GameRecord[];
@@ -41,7 +41,7 @@ export function StreakChart({ records, days }: StreakChartProps) {
         style={{
           fontSize: 12,
           fontWeight: "600",
-          color: PlatformColor("secondaryLabel"),
+          color: colors.textSecondary,
           textTransform: "uppercase",
           letterSpacing: 0.3,
         }}

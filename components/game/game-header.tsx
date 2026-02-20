@@ -2,7 +2,7 @@ import { useColors } from "@/hooks/use-colors";
 import { useStorage } from "@/hooks/use-storage";
 import { formatTime } from "@/hooks/use-timer";
 import { DEFAULT_SETTINGS, GameSettings } from "@/types/game";
-import { PlatformColor, Text, View } from "react-native";
+import { Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 interface GameHeaderProps {
@@ -46,7 +46,7 @@ export function GameHeader({
               fontSize: 22,
               fontWeight: "700",
               fontVariant: ["tabular-nums"],
-              color: PlatformColor("label"),
+              color: colors.textPrimary,
             }}
           >
             {tilesInPool}
@@ -54,7 +54,7 @@ export function GameHeader({
           <Text
             style={{
               fontSize: 11,
-              color: PlatformColor("secondaryLabel"),
+              color: colors.textSecondary,
               fontWeight: "500",
             }}
           >
@@ -67,7 +67,7 @@ export function GameHeader({
               fontSize: 22,
               fontWeight: "700",
               fontVariant: ["tabular-nums"],
-              color: PlatformColor("label"),
+              color: colors.textPrimary,
             }}
           >
             {tilesInHand}
@@ -75,7 +75,7 @@ export function GameHeader({
           <Text
             style={{
               fontSize: 11,
-              color: PlatformColor("secondaryLabel"),
+              color: colors.textSecondary,
               fontWeight: "500",
             }}
           >
@@ -90,7 +90,7 @@ export function GameHeader({
             fontSize: 28,
             fontWeight: "600",
             fontVariant: ["tabular-nums"],
-            color: isLow ? "#FF3B30" : PlatformColor("label"),
+            color: isLow ? "#FF3B30" : colors.textPrimary,
           }}
         >
           {formatTime(displayTime)}

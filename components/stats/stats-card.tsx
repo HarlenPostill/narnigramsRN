@@ -1,6 +1,6 @@
 import { useColors } from "@/hooks/use-colors";
 import { SymbolView } from "expo-symbols";
-import { PlatformColor, Text, View } from "react-native";
+import { Text, View } from "react-native";
 
 interface StatsCardProps {
   title: string;
@@ -45,7 +45,7 @@ export function StatsCard({
             style={{
               fontSize: 12,
               fontWeight: "600",
-              color: PlatformColor("secondaryLabel"),
+              color: colors.textSecondary,
               textTransform: "uppercase",
               letterSpacing: 0.3,
             }}
@@ -56,7 +56,7 @@ export function StatsCard({
             <SymbolView
               name={"info.circle.fill"}
               size={12}
-              tintColor={PlatformColor("secondaryLabel")}
+              tintColor={colors.textSecondary}
             />
           )}
         </View>
@@ -80,7 +80,7 @@ export function StatsCard({
         {value}
       </Text>
       {subtitle && (
-        <Text style={{ fontSize: 12, color: PlatformColor("secondaryLabel") }}>
+        <Text style={{ fontSize: 12, color: colors.textSecondary }}>
           {subtitle}
         </Text>
       )}

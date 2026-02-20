@@ -2,7 +2,6 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
-  PlatformColor,
   Pressable,
   Text,
   useWindowDimensions,
@@ -391,7 +390,7 @@ export default function GameScreen() {
           alignItems: "center",
         }}
       >
-        <Text style={{ fontSize: 18, color: PlatformColor("secondaryLabel") }}>
+        <Text style={{ fontSize: 18, color: colors.textSecondary }}>
           Leave Game
         </Text>
       </Pressable>

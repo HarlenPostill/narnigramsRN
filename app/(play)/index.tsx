@@ -5,8 +5,9 @@ import { useStorage } from "@/hooks/use-storage";
 import type { GameSettings, GameState, GameStats } from "@/types/game";
 import { DEFAULT_SETTINGS, EMPTY_STATS } from "@/types/game";
 import { useRouter } from "expo-router";
-import { PlatformColor, Pressable, ScrollView, Text, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const PRESETS: {
   label: string;
@@ -150,121 +151,123 @@ export default function HomeScreen() {
   };
 
   return (
-    <ScrollView
-      contentInsetAdjustmentBehavior="automatic"
-      contentContainerStyle={{ padding: 20, gap: 24 }}
-    >
-      <View style={{ gap: 12, flexDirection: "row", alignItems: "center" }}>
-        <StatsCard
-          title="streak"
-          value={String(stats.currentStreak)}
-          icon="flame.fill"
-          iconColor="#E96812"
-        />
-        <Pressable
-          style={{ flexGrow: 1 }}
-          onPress={() => router.push("/(play)/rank")}
-        >
+    <SafeAreaView style={{ paddingVertical: 60 }}>
+      <ScrollView
+        contentInsetAdjustmentBehavior="automatic"
+        contentContainerStyle={{ padding: 20, gap: 24 }}
+      >
+        <View style={{ gap: 12, flexDirection: "row", alignItems: "center" }}>
           <StatsCard
-            hasInfo
-            title="Rating"
-            value={"800"}
-            icon="trophy.fill"
-            iconColor="#FFC800"
+            title="streak"
+            value={String(stats.currentStreak)}
+            icon="flame.fill"
+            iconColor="#E96812"
           />
-        </Pressable>
-      </View>
+          <Pressable
+            style={{ flexGrow: 1 }}
+            onPress={() => router.push("/(play)/rank")}
+          >
+            <StatsCard
+              hasInfo
+              title="Rating"
+              value={"800"}
+              icon="trophy.fill"
+              iconColor="#FFC800"
+            />
+          </Pressable>
+        </View>
 
-      {/* Play Ranked */}
-      <ActionButton
-        label="Play Ranked"
-        rightLabel="GOLD"
-        iconName="trophy.fill"
-        onPress={() => router.push("/game")}
-        variant="primary"
-        delay={0}
-        disabled
-      />
-
-      {/* Play Solo */}
-      <ActionButton
-        label="Play Offline"
-        rightLabel={settings.gameMode === "bot" ? "Bot Game" : "Solo Game"}
-        iconName="person.fill"
-        onPress={() => router.push("/game")}
-        variant="outline"
-        delay={50}
-      />
-
-      {/* Resume Game */}
-      {hasSavedGame && (
+        {/* Play Ranked */}
         <ActionButton
-          label="Resume Game"
-          rightLabel={`${savedGame.pool.length} Tiles Left`}
-          iconName="arrowshape.turn.up.forward.fill"
-          onPress={() =>
-            router.push({ pathname: "/game", params: { resume: "true" } })
-          }
-          variant="default"
-          delay={100}
-          rightLabelColor={PlatformColor("secondaryLabel") as unknown as string}
-          iconTintColor={PlatformColor("secondaryLabel") as unknown as string}
+          label="Play Ranked"
+          rightLabel="GOLD"
+          iconName="trophy.fill"
+          onPress={() => router.push("/game")}
+          variant="primary"
+          delay={0}
+          disabled
         />
-      )}
 
-      {/* Quick Play Presets */}
-      <View style={{ gap: 8 }}>
-        <Text
-          style={{
-            fontSize: 13,
-            fontWeight: "600",
-            textTransform: "uppercase",
-            color: PlatformColor("secondaryLabel"),
-            letterSpacing: 0.5,
-            paddingHorizontal: 4,
-          }}
-        >
-          Quick solo games
-        </Text>
-        <View style={{ gap: 8, flexDirection: "row" }}>
-          {PRESETS.map((preset, i) => (
-            <PresetCard
-              key={preset.label}
-              label={preset.label}
-              onPress={() => startWithPreset(preset.settings)}
-              delay={200 + i * 80}
-              colors={colors}
-            />
-          ))}
-        </View>
-      </View>
+        {/* Play Solo */}
+        <ActionButton
+          label="Play Offline"
+          rightLabel={settings.gameMode === "bot" ? "Bot Game" : "Solo Game"}
+          iconName="person.fill"
+          onPress={() => router.push("/game")}
+          variant="outline"
+          delay={50}
+        />
 
-      {/* Bot Play Presets */}
-      <View style={{ gap: 8 }}>
-        <Text
-          style={{
-            fontSize: 13,
-            fontWeight: "600",
-            textTransform: "uppercase",
-            color: PlatformColor("secondaryLabel"),
-            letterSpacing: 0.5,
-            paddingHorizontal: 4,
-          }}
-        >
-          Warm up with bots
-        </Text>
-        <View style={{ gap: 8, flexDirection: "row" }}>
-          {BOT_PRESETS.map((preset, i) => (
-            <PresetCard
-              key={preset.label}
-              label={preset.label}
-              onPress={() => startWithPreset(preset.settings)}
-              delay={200 + i * 80}
-              colors={colors}
-            />
-          ))}
+        {/* Resume Game */}
+        {hasSavedGame && (
+          <ActionButton
+            label="Resume Game"
+            rightLabel={`${savedGame.pool.length} Tiles Left`}
+            iconName="arrowshape.turn.up.forward.fill"
+            onPress={() =>
+              router.push({ pathname: "/game", params: { resume: "true" } })
+            }
+            variant="default"
+            delay={100}
+            rightLabelColor={colors.textSecondary}
+            iconTintColor={colors.textSecondary}
+          />
+        )}
+
+        {/* Quick Play Presets */}
+        <View style={{ gap: 8 }}>
+          <Text
+            style={{
+              fontSize: 13,
+              fontWeight: "600",
+              textTransform: "uppercase",
+              color: colors.textSecondary,
+              letterSpacing: 0.5,
+              paddingHorizontal: 4,
+            }}
+          >
+            Quick solo games
+          </Text>
+          <View style={{ gap: 8, flexDirection: "row" }}>
+            {PRESETS.map((preset, i) => (
+              <PresetCard
+                key={preset.label}
+                label={preset.label}
+                onPress={() => startWithPreset(preset.settings)}
+                delay={200 + i * 80}
+                colors={colors}
+              />
+            ))}
+          </View>
         </View>
-      </View>
-    </ScrollView>
+
+        {/* Bot Play Presets */}
+        <View style={{ gap: 8 }}>
+          <Text
+            style={{
+              fontSize: 13,
+              fontWeight: "600",
+              textTransform: "uppercase",
+              color: colors.textSecondary,
+              letterSpacing: 0.5,
+              paddingHorizontal: 4,
+            }}
+          >
+            Warm up with bots
+          </Text>
+          <View style={{ gap: 8, flexDirection: "row" }}>
+            {BOT_PRESETS.map((preset, i) => (
+              <PresetCard
+                key={preset.label}
+                label={preset.label}
+                onPress={() => startWithPreset(preset.settings)}
+                delay={200 + i * 80}
+                colors={colors}
+              />
+            ))}
+          </View>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }

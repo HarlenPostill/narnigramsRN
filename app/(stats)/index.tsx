@@ -1,12 +1,12 @@
-import { ScrollView, View, Text, PlatformColor } from "react-native";
-import Animated, { FadeInDown } from "react-native-reanimated";
-import { Image } from "expo-image";
-import { useStorage } from "@/hooks/use-storage";
-import { useColors } from "@/hooks/use-colors";
 import { StatsCard } from "@/components/stats/stats-card";
 import { StreakChart } from "@/components/stats/streak-chart";
+import { useColors } from "@/hooks/use-colors";
+import { useStorage } from "@/hooks/use-storage";
 import { formatTime } from "@/hooks/use-timer";
 import { EMPTY_STATS, type GameStats } from "@/types/game";
+import { Image } from "expo-image";
+import { ScrollView, Text, View } from "react-native";
+import Animated, { FadeInDown } from "react-native-reanimated";
 
 export default function StatsScreen() {
   const [stats] = useStorage<GameStats>("game-stats", EMPTY_STATS);
@@ -27,13 +27,13 @@ export default function StatsScreen() {
         <Image
           source="sf:chart.bar.doc.horizontal"
           style={{ width: 48, height: 48 }}
-          tintColor={PlatformColor("tertiaryLabel") as unknown as string}
+          tintColor={colors.textSecondary}
         />
         <Text
           style={{
             fontSize: 20,
             fontWeight: "600",
-            color: PlatformColor("secondaryLabel"),
+            color: colors.textSecondary,
           }}
         >
           No Games Yet
@@ -41,7 +41,7 @@ export default function StatsScreen() {
         <Text
           style={{
             fontSize: 15,
-            color: PlatformColor("tertiaryLabel"),
+            color: colors.textSecondary,
             textAlign: "center",
           }}
         >
@@ -58,7 +58,8 @@ export default function StatsScreen() {
 
   const avgTime =
     stats.records.length > 0
-      ? stats.records.reduce((s, r) => s + r.durationMs, 0) / stats.records.length
+      ? stats.records.reduce((s, r) => s + r.durationMs, 0) /
+        stats.records.length
       : 0;
 
   return (
@@ -71,7 +72,11 @@ export default function StatsScreen() {
         style={{ flexDirection: "row", gap: 12 }}
       >
         <StatsCard title="Games" value={String(stats.totalGames)} />
-        <StatsCard title="Wins" value={String(stats.totalWins)} subtitle={`${winRate}%`} />
+        <StatsCard
+          title="Wins"
+          value={String(stats.totalWins)}
+          subtitle={`${winRate}%`}
+        />
       </Animated.View>
 
       <Animated.View
@@ -103,7 +108,7 @@ export default function StatsScreen() {
               style={{
                 fontSize: 12,
                 fontWeight: "600",
-                color: PlatformColor("secondaryLabel"),
+                color: colors.textSecondary,
                 textTransform: "uppercase",
                 letterSpacing: 0.3,
               }}
@@ -118,7 +123,7 @@ export default function StatsScreen() {
                   justifyContent: "space-between",
                 }}
               >
-                <Text style={{ fontSize: 15, color: PlatformColor("secondaryLabel") }}>
+                <Text style={{ fontSize: 15, color: colors.textSecondary }}>
                   {mode.replace("-", " · ")}
                 </Text>
                 <Text
