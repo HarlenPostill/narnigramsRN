@@ -71,7 +71,7 @@ export interface GameSettings {
   difficulty: Difficulty;
   timerMode: TimerMode;
   showTimer: boolean;
-  gameMode?: GameMode;
+  gameMode: GameMode;
   botDifficulty?: BotDifficulty;
 }
 
@@ -82,6 +82,7 @@ export const DEFAULT_SETTINGS: GameSettings = {
   difficulty: "standard",
   timerMode: "none",
   showTimer: true,
+  gameMode: "solo",
 };
 
 export interface GameState {
@@ -94,6 +95,7 @@ export interface GameState {
   isComplete: boolean;
   isWin: boolean;
   botState?: BotState;
+  invalidTileIds?: string[];
 }
 
 export interface GameRecord {

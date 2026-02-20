@@ -21,6 +21,7 @@ const PRESETS: {
       handSize: 11,
       difficulty: "easy",
       timerMode: "none",
+      gameMode: "solo",
     },
   },
   {
@@ -31,6 +32,7 @@ const PRESETS: {
       handSize: 15,
       difficulty: "standard",
       timerMode: "none",
+      gameMode: "solo",
     },
   },
   {
@@ -41,6 +43,7 @@ const PRESETS: {
       handSize: 21,
       difficulty: "hard",
       timerMode: 15,
+      gameMode: "solo",
     },
   },
 ];
@@ -180,12 +183,13 @@ export default function HomeScreen() {
         onPress={() => router.push("/game")}
         variant="primary"
         delay={0}
+        disabled
       />
 
       {/* Play Solo */}
       <ActionButton
-        label="Play Solo"
-        rightLabel="Quick"
+        label="Play Offline"
+        rightLabel={settings.gameMode === "bot" ? "Bot Game" : "Solo Game"}
         iconName="person.fill"
         onPress={() => router.push("/game")}
         variant="outline"

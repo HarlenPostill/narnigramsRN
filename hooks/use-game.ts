@@ -9,11 +9,13 @@ import {
   exchangeTile,
   sharedPeel,
   validateBoard,
+  validateBoardWords,
 } from "@/utils/game-engine";
 import { getBotConfig } from "@/utils/bot-config";
 import { createBotState, botTick as botTickEngine } from "@/utils/bot-engine";
+import { loadDictionary } from "@/utils/dictionary";
 import { storage } from "@/utils/storage";
-import { useCallback, useReducer } from "react";
+import { useCallback, useEffect, useReducer, useRef } from "react";
 
 const SAVE_KEY = "current-game";
 
@@ -27,7 +29,9 @@ type Action =
   | { type: "PEEL" }
   | { type: "TICK"; elapsedMs: number }
   | { type: "END_GAME"; isWin: boolean }
-  | { type: "BOT_TICK"; now: number };
+  | { type: "BOT_TICK"; now: number }
+  | { type: "MARK_INVALID"; tileIds: string[] }
+  | { type: "CLEAR_INVALID" };
 
 function reducer(state: GameState, action: Action): GameState {
   switch (action.type) {
@@ -70,6 +74,7 @@ function reducer(state: GameState, action: Action): GameState {
         ...state,
         hand: state.hand.filter((t) => t.id !== action.tileId),
         board: { ...state.board, [key]: tile },
+        invalidTileIds: undefined,
       };
     }
 
@@ -85,6 +90,7 @@ function reducer(state: GameState, action: Action): GameState {
         ...state,
         hand: [...state.hand, tile],
         board: newBoard,
+        invalidTileIds: undefined,
       };
     }
 
@@ -99,7 +105,7 @@ function reducer(state: GameState, action: Action): GameState {
       const newBoard = { ...state.board };
       delete newBoard[oldKey];
       newBoard[newKey] = tile;
-      return { ...state, board: newBoard };
+      return { ...state, board: newBoard, invalidTileIds: undefined };
     }
 
     case "EXCHANGE_TILE": {
@@ -130,6 +136,7 @@ function reducer(state: GameState, action: Action): GameState {
         hand: [...newHand, ...result.newTiles],
         pool: result.remaining,
         board: newBoard,
+        invalidTileIds: undefined,
       };
     }
 
@@ -216,6 +223,12 @@ function reducer(state: GameState, action: Action): GameState {
       }
     }
 
+    case "MARK_INVALID":
+      return { ...state, invalidTileIds: action.tileIds };
+
+    case "CLEAR_INVALID":
+      return { ...state, invalidTileIds: undefined };
+
     default:
       return state;
   }
@@ -241,6 +254,18 @@ const INITIAL_STATE: GameState = {
 
 export function useGame() {
   const [state, dispatch] = useReducer(reducer, INITIAL_STATE);
+  const dictionaryRef = useRef<Set<string> | null>(null);
+
+  // Load dictionary on mount
+  useEffect(() => {
+    loadDictionary()
+      .then((dict) => {
+        dictionaryRef.current = dict;
+      })
+      .catch((err) => {
+        console.warn("Failed to load dictionary:", err);
+      });
+  }, []);
 
   const startGame = useCallback((settings: GameSettings) => {
     dispatch({ type: "INIT", settings });
@@ -298,17 +323,47 @@ export function useGame() {
     dispatch({ type: "BOT_TICK", now });
   }, []);
 
+  const markInvalid = useCallback((tileIds: string[]) => {
+    dispatch({ type: "MARK_INVALID", tileIds });
+  }, []);
+
+  const clearInvalid = useCallback(() => {
+    dispatch({ type: "CLEAR_INVALID" });
+  }, []);
+
+  /** Validate all board words against the dictionary.
+   *  Returns true if all words are valid (or dictionary not loaded). */
+  const validateWords = useCallback((): boolean => {
+    const dict = dictionaryRef.current;
+    if (!dict) return true; // fail-open
+
+    const { valid, invalidKeys } = validateBoardWords(state.board, dict);
+    if (!valid) {
+      // Convert board keys to tile IDs for highlighting
+      const tileIds = Array.from(invalidKeys)
+        .map((key) => state.board[key]?.id)
+        .filter(Boolean) as string[];
+      markInvalid(tileIds);
+      return false;
+    }
+    return true;
+  }, [state.board, markInvalid]);
+
   const boardIsValid = validateBoard(state.board);
   const isBotMode = state.settings.gameMode === "bot";
   const canPeelNow = isBotMode
     ? canSharedPeel(state.hand, state.pool, state.board)
     : canPeel(state.hand, state.pool, state.board);
   const hasWon = checkWinCondition(state.hand, state.pool, state.board);
+  // Show the action button when hand is empty and board is connected
+  // (covers both "peel" when pool > 0 and "finish" when pool = 0)
+  const canAct = state.hand.length === 0 && boardIsValid && Object.keys(state.board).length > 0;
 
   return {
     state,
     boardIsValid,
     canPeelNow,
+    canAct,
     hasWon,
     startGame,
     restoreGame,
@@ -322,5 +377,8 @@ export function useGame() {
     tick,
     endGame,
     botTick,
+    validateWords,
+    markInvalid,
+    clearInvalid,
   };
 }

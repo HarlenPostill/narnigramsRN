@@ -14,6 +14,7 @@ interface ActionButtonProps {
   delay?: number;
   iconTintColor?: string;
   rightLabelColor?: string;
+  disabled?: boolean;
 }
 
 export function ActionButton({
@@ -25,6 +26,7 @@ export function ActionButton({
   delay = 0,
   iconTintColor,
   rightLabelColor,
+  disabled = false,
 }: ActionButtonProps) {
   const colors = useColors();
 
@@ -38,7 +40,8 @@ export function ActionButton({
       : colors.textPrimary;
 
   const resolvedRightLabelColor =
-    rightLabelColor ?? (isPrimary ? colors.cardBg : isOutline ? "#007AFF" : undefined);
+    rightLabelColor ??
+    (isPrimary ? colors.cardBg : isOutline ? "#007AFF" : undefined);
 
   const resolvedIconTintColor =
     iconTintColor ?? (isPrimary ? colors.cardBg : undefined);
@@ -46,7 +49,7 @@ export function ActionButton({
   return (
     <Animated.View entering={FadeInDown.delay(delay).duration(400)}>
       <Pressable
-        onPress={onPress}
+        onPress={disabled ? undefined : onPress}
         style={({ pressed }) => ({
           backgroundColor: isPrimary
             ? pressed
@@ -86,9 +89,7 @@ export function ActionButton({
           >
             {label}
           </Text>
-          <View
-            style={{ flexDirection: "row", alignItems: "center", gap: 12 }}
-          >
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
             <Text
               style={{
                 fontSize: 16,

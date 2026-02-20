@@ -16,14 +16,14 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { BotProgress } from "@/components/game/bot-progress";
 import {
   BOARD_SIZE,
   GameBoard,
   GRID_COUNT,
 } from "@/components/game/game-board";
-import { BotProgress } from "@/components/game/bot-progress";
-import { GameResultModal } from "@/components/game/game-result-modal";
 import { GameHeader } from "@/components/game/game-header";
+import { GameResultModal } from "@/components/game/game-result-modal";
 import { PlayerHand } from "@/components/game/player-hand";
 import { CELL_SIZE } from "@/components/game/tile";
 import { BIN_SIZE, TileBin } from "@/components/game/tile-bin";
@@ -33,7 +33,11 @@ import { useStorage } from "@/hooks/use-storage";
 import { formatTime, useTimer } from "@/hooks/use-timer";
 import type { GameSettings } from "@/types/game";
 import { DEFAULT_SETTINGS } from "@/types/game";
-import { lightImpact, mediumImpact, successNotification } from "@/utils/haptics";
+import {
+  lightImpact,
+  mediumImpact,
+  successNotification,
+} from "@/utils/haptics";
 import { recordGame } from "@/utils/stats-manager";
 
 export default function GameScreen() {
@@ -46,8 +50,7 @@ export default function GameScreen() {
 
   const {
     state,
-    canPeelNow,
-    hasWon,
+    canAct,
     startGame,
     restoreGame,
     saveGame,
@@ -60,6 +63,7 @@ export default function GameScreen() {
     tick,
     endGame,
     botTick,
+    validateWords,
   } = useGame();
 
   const timerMinutes =
@@ -114,34 +118,10 @@ export default function GameScreen() {
     }
   }, [tick, timer.elapsedMs, timer.isRunning]);
 
-  // Check win
-  useEffect(() => {
-    if (hasWon && !state.isComplete) {
-      timer.pause();
-      endGame(true);
-      successNotification();
-      recordGame({
-        id: `game-${Date.now()}`,
-        date: new Date().toISOString(),
-        durationMs: timer.elapsedMs,
-        difficulty: state.settings.difficulty,
-        poolSize: state.settings.poolSize,
-        timerMode: state.settings.timerMode,
-        isWin: true,
-        tilesPlaced: Object.keys(state.board).length,
-      });
-      setShowWinModal(true);
-    }
-  }, [
-    endGame,
-    hasWon,
-    state.board,
-    state.isComplete,
-    state.settings.difficulty,
-    state.settings.poolSize,
-    state.settings.timerMode,
-    timer,
-  ]);
+  // Win is now triggered by the player pressing the Peel/Narnigrams button
+  // (see handlePeel). This effect is intentionally removed to avoid
+  // dispatching state changes from within useEffect (React Compiler issue)
+  // and to give the player explicit control over word validation.
 
   // Auto-save on state changes
   useEffect(() => {
@@ -165,7 +145,6 @@ export default function GameScreen() {
   const screenToGrid = useCallback(
     (absX: number, absY: number) => {
       const contY = boardContainerY.current;
-      const contH = boardContainerHeight.current;
 
       // Board view base offset (before transforms)
       const baseLeft = -(BOARD_SIZE - screenWidth) / 2;
@@ -266,9 +245,46 @@ export default function GameScreen() {
   );
 
   const handlePeel = useCallback(() => {
+    const wordsValid = validateWords();
+    if (!wordsValid) {
+      Alert.alert(
+        "Invalid Words",
+        "Some words on your board aren't valid Narnigram words. Fix them first!",
+      );
+      return;
+    }
+
+    // Pool empty + hand empty = win
+    if (state.pool.length === 0) {
+      timer.pause();
+      endGame(true);
+      successNotification();
+      recordGame({
+        id: `game-${Date.now()}`,
+        date: new Date().toISOString(),
+        durationMs: timer.elapsedMs,
+        difficulty: state.settings.difficulty,
+        poolSize: state.settings.poolSize,
+        timerMode: state.settings.timerMode,
+        isWin: true,
+        tilesPlaced: Object.keys(state.board).length,
+      });
+      setShowWinModal(true);
+      mediumImpact();
+      return;
+    }
+
     peel();
     mediumImpact();
-  }, [peel]);
+  }, [
+    peel,
+    validateWords,
+    state.pool.length,
+    state.board,
+    state.settings,
+    timer,
+    endGame,
+  ]);
 
   const handleQuit = useCallback(() => {
     Alert.alert("Leave Game?", "Your progress will be saved.", [
@@ -312,6 +328,7 @@ export default function GameScreen() {
           boardContainerY.current = y;
           boardContainerHeight.current = h;
         }}
+        invalidTileIds={state.invalidTileIds}
       />
 
       {/* Bin + Peel overlay */}
@@ -327,7 +344,7 @@ export default function GameScreen() {
           gap: 12,
         }}
       >
-        {canPeelNow && (
+        {canAct && !state.isComplete && (
           <Animated.View
             entering={FadeIn}
             exiting={FadeOut}
@@ -336,7 +353,8 @@ export default function GameScreen() {
             <Pressable
               onPress={handlePeel}
               style={{
-                backgroundColor: "#0062FF",
+                backgroundColor:
+                  state.pool.length === 0 ? "#2E7D32" : "#0062FF",
                 paddingHorizontal: 12,
                 height: 77,
                 justifyContent: "center",
@@ -347,7 +365,7 @@ export default function GameScreen() {
               }}
             >
               <Text style={{ color: "white", fontWeight: "700", fontSize: 15 }}>
-                Peel!
+                {state.pool.length === 0 ? "Narnigrams!" : "Peel!"}
               </Text>
             </Pressable>
           </Animated.View>

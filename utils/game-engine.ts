@@ -1,6 +1,7 @@
-import type { Tile, Letter, Difficulty, PoolSize, BoardPosition } from "@/types/game";
-import { LETTER_POINTS, posKey, parseKey } from "@/types/game";
+import type { Difficulty, Letter, PoolSize, Tile } from "@/types/game";
+import { LETTER_POINTS, parseKey, posKey } from "@/types/game";
 import { getDistribution } from "./tile-distribution";
+import { extractWords } from "./word-extraction";
 
 let tileIdCounter = 0;
 
@@ -25,7 +26,10 @@ export function createTilePool(size: PoolSize, difficulty: Difficulty): Tile[] {
   return shuffle(tiles);
 }
 
-export function drawTiles(pool: Tile[], count: number): { drawn: Tile[]; remaining: Tile[] } {
+export function drawTiles(
+  pool: Tile[],
+  count: number,
+): { drawn: Tile[]; remaining: Tile[] } {
   const shuffled = shuffle([...pool]);
   return {
     drawn: shuffled.slice(0, count),
@@ -35,7 +39,7 @@ export function drawTiles(pool: Tile[], count: number): { drawn: Tile[]; remaini
 
 export function exchangeTile(
   pool: Tile[],
-  tile: Tile
+  tile: Tile,
 ): { newTiles: Tile[]; remaining: Tile[] } | null {
   if (pool.length < 2) return null;
 
@@ -79,7 +83,7 @@ export function validateBoard(board: Record<string, Tile>): boolean {
 export function checkWinCondition(
   hand: Tile[],
   pool: Tile[],
-  board: Record<string, Tile>
+  board: Record<string, Tile>,
 ): boolean {
   return hand.length === 0 && pool.length === 0 && validateBoard(board);
 }
@@ -87,7 +91,7 @@ export function checkWinCondition(
 export function canPeel(
   hand: Tile[],
   pool: Tile[],
-  board: Record<string, Tile>
+  board: Record<string, Tile>,
 ): boolean {
   return hand.length === 0 && pool.length > 0 && validateBoard(board);
 }
@@ -95,7 +99,7 @@ export function canPeel(
 export function canSharedPeel(
   hand: Tile[],
   pool: Tile[],
-  board: Record<string, Tile>
+  board: Record<string, Tile>,
 ): boolean {
   return hand.length === 0 && pool.length >= 2 && validateBoard(board);
 }
@@ -111,6 +115,22 @@ export function sharedPeel(pool: Tile[]): {
     botTile: shuffled[1],
     remaining: shuffled.slice(2),
   };
+}
+
+export function validateBoardWords(
+  board: Record<string, Tile>,
+  dictionary: Set<string>,
+): { valid: boolean; invalidKeys: Set<string> } {
+  const words = extractWords(board);
+  const invalidKeys = new Set<string>();
+
+  for (const { word, keys } of words) {
+    if (!dictionary.has(word.toUpperCase())) {
+      for (const k of keys) invalidKeys.add(k);
+    }
+  }
+
+  return { valid: invalidKeys.size === 0, invalidKeys };
 }
 
 export function shuffle<T>(array: T[]): T[] {

@@ -2,6 +2,7 @@ import { SettingsSection } from "@/components/settings/settings-section";
 import { useStorage } from "@/hooks/use-storage";
 import type {
   Difficulty,
+  GameMode,
   GameSettings,
   HandMode,
   HandSize,
@@ -14,6 +15,7 @@ import { PlatformColor, ScrollView, Switch, Text, View } from "react-native";
 
 const HAND_MODE: HandMode[] = ["left", "right"];
 const POOL_SIZES: PoolSize[] = [50, 72, 100];
+const GAME_MODE: GameMode[] = ["solo", "bot"];
 const HAND_SIZES: HandSize[] = [11, 15, 21];
 const DIFFICULTIES: Difficulty[] = ["easy", "standard", "hard"];
 const TIMER_MODES: { label: string; value: TimerMode }[] = [
@@ -64,9 +66,23 @@ export default function SettingsScreen() {
       contentContainerStyle={{ padding: 16, gap: 12 }}
     >
       <SettingsSection
-        title="Letter Settings"
+        title="Game Settings"
         description="Edit settings for your next game. This will not affect any games currently in progress."
       >
+        <SettingRow label="Next Game Mode">
+          <SegmentedControl
+            values={GAME_MODE.map(
+              (d) => d.charAt(0).toUpperCase() + d.slice(1),
+            )}
+            selectedIndex={GAME_MODE.indexOf(settings.gameMode)}
+            onChange={({ nativeEvent }) =>
+              update({
+                gameMode: GAME_MODE[nativeEvent.selectedSegmentIndex],
+              })
+            }
+          />
+        </SettingRow>
+
         <SettingRow label="Tile Pool Size (Game Length)">
           <SegmentedControl
             values={POOL_SIZES.map(String)}
@@ -118,8 +134,7 @@ export default function SettingsScreen() {
             )}
             onChange={({ nativeEvent }) =>
               update({
-                timerMode:
-                  TIMER_MODES[nativeEvent.selectedSegmentIndex].value,
+                timerMode: TIMER_MODES[nativeEvent.selectedSegmentIndex].value,
               })
             }
           />

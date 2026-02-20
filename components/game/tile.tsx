@@ -7,9 +7,10 @@ const CELL_SIZE = 50;
 interface TileProps {
   tile: TileType;
   size?: number;
+  isInvalid?: boolean;
 }
 
-export function Tile({ tile, size = CELL_SIZE }: TileProps) {
+export function Tile({ tile, size = CELL_SIZE, isInvalid }: TileProps) {
   const colors = useColors();
   const fontSize = size * 0.6;
   const pointsSize = size * 0.22;
@@ -22,9 +23,9 @@ export function Tile({ tile, size = CELL_SIZE }: TileProps) {
         height: size,
         borderRadius: size * 0.18,
         borderCurve: "continuous",
-        borderColor: colors.tileBorder,
-        borderWidth: 0.005 * size,
-        backgroundColor: colors.tileBg,
+        borderColor: isInvalid ? "#E53935" : colors.tileBorder,
+        borderWidth: isInvalid ? 2 : 0.005 * size,
+        backgroundColor: isInvalid ? "#FFCDD2" : colors.tileBg,
         justifyContent: "center",
         alignItems: "center",
         boxShadow: colors.tileInsetShadow,

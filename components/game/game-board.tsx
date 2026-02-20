@@ -24,6 +24,7 @@ interface GameBoardProps {
   savedTranslateX: SharedValue<number>;
   savedTranslateY: SharedValue<number>;
   onContainerLayout?: (y: number, height: number) => void;
+  invalidTileIds?: string[];
 }
 
 function GridBackground({ lineColor }: { lineColor: string }) {
@@ -67,6 +68,7 @@ export function GameBoard({
   savedTranslateX,
   savedTranslateY,
   onContainerLayout,
+  invalidTileIds,
 }: GameBoardProps) {
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const colors = useColors();
@@ -142,7 +144,11 @@ export function GameBoard({
                   top: row * CELL_SIZE,
                 }}
               >
-                <DraggableTile tile={tile} onDragEnd={onTileDragEnd} />
+                <DraggableTile
+                  tile={tile}
+                  onDragEnd={onTileDragEnd}
+                  isInvalid={invalidTileIds?.includes(tile.id)}
+                />
               </View>
             );
           })}

@@ -16,12 +16,14 @@ interface DraggableTileProps {
   tile: TileType;
   onDragEnd: (tileId: string, absoluteX: number, absoluteY: number) => void;
   size?: number;
+  isInvalid?: boolean;
 }
 
 export function DraggableTile({
   tile,
   onDragEnd,
   size = CELL_SIZE,
+  isInvalid,
 }: DraggableTileProps) {
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
@@ -78,7 +80,7 @@ export function DraggableTile({
   return (
     <GestureDetector gesture={gesture}>
       <Animated.View style={animatedStyle}>
-        <Tile tile={tile} size={size} />
+        <Tile tile={tile} size={size} isInvalid={isInvalid} />
       </Animated.View>
     </GestureDetector>
   );
