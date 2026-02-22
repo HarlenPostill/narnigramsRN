@@ -11,7 +11,7 @@ export default function StatsLayout() {
         headerShadowVisible: false,
         headerLargeTitleShadowVisible: false,
         headerLargeStyle: { backgroundColor: "transparent" },
-        headerTitleStyle: { color: colors.textSecondary },
+        headerTitleStyle: { color: colors.textPrimary },
         headerBlurEffect: "none",
       }}
     >

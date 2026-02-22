@@ -1,25 +1,32 @@
 import { Theme } from "@/components/theme";
-import { Icon, Label, NativeTabs } from "expo-router/unstable-native-tabs";
+import { useColors } from "@/hooks/use-colors";
+import { Stack } from "expo-router/stack";
 import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
 
 export default function RootLayout() {
+  const colors = useColors();
   return (
     <Theme>
-      <NativeTabs>
-        <NativeTabs.Trigger name="(play)">
-          <Icon sf="gamecontroller.fill" drawable="ic_menu_gallery" />
-          <Label>Play</Label>
-        </NativeTabs.Trigger>
-        <NativeTabs.Trigger name="(stats)">
-          <Icon sf="chart.bar.fill" drawable="ic_menu_sort_by_size" />
-          <Label>Stats</Label>
-        </NativeTabs.Trigger>
-        <NativeTabs.Trigger name="(settings)">
-          <Icon sf="gear" drawable="ic_menu_preferences" />
-          <Label>Settings</Label>
-        </NativeTabs.Trigger>
-      </NativeTabs>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="game" />
+        <Stack.Screen
+          name="rank"
+          options={{
+            headerShown: true,
+            title: "Rating",
+            headerLargeTitle: true,
+            headerTransparent: true,
+            headerShadowVisible: false,
+            headerLargeTitleShadowVisible: false,
+            headerLargeStyle: { backgroundColor: "transparent" },
+            headerTitleStyle: { color: colors.textPrimary },
+            headerBlurEffect: "none",
+            headerBackButtonDisplayMode: "minimal",
+          }}
+        />
+      </Stack>
       <StatusBar style="auto" />
     </Theme>
   );

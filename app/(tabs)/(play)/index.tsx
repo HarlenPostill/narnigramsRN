@@ -163,30 +163,20 @@ export default function HomeScreen() {
             icon="flame.fill"
             iconColor="#E96812"
           />
-          <Pressable
-            style={{ flexGrow: 1 }}
-            onPress={() => router.push("/(play)/rank")}
-          >
-            <StatsCard
-              hasInfo
-              title="Rating"
-              value={"800"}
-              icon="trophy.fill"
-              iconColor="#FFC800"
-            />
-          </Pressable>
+          <StatsCard
+            hasInfo
+            title="Win Rate"
+            value={
+              String(
+                stats.totalWins > 0
+                  ? Math.round((stats.totalWins / stats.totalGames) * 100)
+                  : 0,
+              ) + "%"
+            }
+            icon="trophy.fill"
+            iconColor="#FFC800"
+          />
         </View>
-
-        {/* Play Ranked */}
-        <ActionButton
-          label="Play Ranked"
-          rightLabel="GOLD"
-          iconName="trophy.fill"
-          onPress={() => router.push("/game")}
-          variant="primary"
-          delay={0}
-          disabled
-        />
 
         {/* Play Solo */}
         <ActionButton
