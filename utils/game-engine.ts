@@ -1,6 +1,7 @@
 import type { Difficulty, Letter, PoolSize, Tile } from "@/types/game";
 import { LETTER_POINTS, parseKey, posKey } from "@/types/game";
 import { getDistribution } from "./tile-distribution";
+import { seededShuffle } from "./seeded-random";
 import { extractWords } from "./word-extraction";
 
 let tileIdCounter = 0;
@@ -13,7 +14,11 @@ function createTile(letter: Letter): Tile {
   };
 }
 
-export function createTilePool(size: PoolSize, difficulty: Difficulty): Tile[] {
+export function createTilePool(
+  size: PoolSize,
+  difficulty: Difficulty,
+  seed?: string,
+): Tile[] {
   const dist = getDistribution(difficulty, size);
   const tiles: Tile[] = [];
 
@@ -23,7 +28,7 @@ export function createTilePool(size: PoolSize, difficulty: Difficulty): Tile[] {
     }
   }
 
-  return shuffle(tiles);
+  return seed ? seededShuffle(tiles, seed) : shuffle(tiles);
 }
 
 export function drawTiles(

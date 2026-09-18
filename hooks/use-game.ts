@@ -1,4 +1,4 @@
-import type { GameSettings, GameState, Tile } from "@/types/game";
+import type { Difficulty, GameSettings, GameState, PoolSize, Tile } from "@/types/game";
 import { posKey } from "@/types/game";
 import {
   canPeel,
@@ -21,12 +21,14 @@ const SAVE_KEY = "current-game";
 
 type Action =
   | { type: "INIT"; settings: GameSettings }
+  | { type: "ONLINE_INIT"; seed: string; playerIndex: 0 | 1; poolSize: PoolSize; handSize: number; difficulty: Difficulty }
   | { type: "RESTORE"; state: GameState }
   | { type: "PLACE_TILE"; tileId: string; row: number; col: number }
   | { type: "RETURN_TILE"; tileId: string }
   | { type: "MOVE_TILE"; tileId: string; row: number; col: number }
   | { type: "EXCHANGE_TILE"; tileId: string }
   | { type: "PEEL" }
+  | { type: "REMOTE_PEEL" }
   | { type: "TICK"; elapsedMs: number }
   | { type: "END_GAME"; isWin: boolean }
   | { type: "BOT_TICK"; now: number }
@@ -59,6 +61,37 @@ function reducer(state: GameState, action: Action): GameState {
         isComplete: false,
         isWin: false,
         botState: isBotMode ? createBotState(botHandSize) : undefined,
+      };
+    }
+
+    case "ONLINE_INIT": {
+      // Both players generate the same pool from the same seed
+      const pool = createTilePool(action.poolSize, action.difficulty, action.seed);
+
+      // Player 0 gets tiles [0..handSize-1], player 1 gets [handSize..2*handSize-1]
+      const startIdx = action.playerIndex * action.handSize;
+      const hand = pool.slice(startIdx, startIdx + action.handSize);
+      const remaining = pool.slice(action.handSize * 2); // after both players' hands
+
+      const onlineSettings: GameSettings = {
+        poolSize: action.poolSize,
+        handSize: action.handSize as any,
+        handMode: "right",
+        difficulty: action.difficulty,
+        timerMode: "none",
+        showTimer: true,
+        gameMode: "online",
+      };
+
+      return {
+        hand,
+        pool: remaining,
+        board: {},
+        startedAt: Date.now(),
+        elapsedMs: 0,
+        settings: onlineSettings,
+        isComplete: false,
+        isWin: false,
       };
     }
 
@@ -154,6 +187,17 @@ function reducer(state: GameState, action: Action): GameState {
             : undefined,
         };
       }
+      // Online mode: shared peel — both players draw 1 tile
+      // (local player draws tile from top of pool, opponent's tile is consumed too)
+      if (state.settings.gameMode === "online") {
+        if (!canSharedPeel(state.hand, state.pool, state.board)) return state;
+        // Take first tile for local player, second is opponent's (consumed)
+        return {
+          ...state,
+          hand: [...state.hand, state.pool[0]],
+          pool: state.pool.slice(2),
+        };
+      }
       // Solo mode: original behavior
       if (!canPeel(state.hand, state.pool, state.board)) return state;
       const { drawn, remaining } = drawTiles(state.pool, 1);
@@ -161,6 +205,17 @@ function reducer(state: GameState, action: Action): GameState {
         ...state,
         hand: [...state.hand, ...drawn],
         pool: remaining,
+      };
+    }
+
+    case "REMOTE_PEEL": {
+      // Opponent peeled: local player draws 1 tile, opponent's tile also consumed
+      if (state.pool.length < 2) return state;
+      // First tile is opponent's (consumed), second is for local player
+      return {
+        ...state,
+        hand: [...state.hand, state.pool[1]],
+        pool: state.pool.slice(2),
       };
     }
 
@@ -247,6 +302,7 @@ const INITIAL_STATE: GameState = {
     difficulty: "standard",
     timerMode: "none",
     showTimer: true,
+    gameMode: "solo",
   },
   isComplete: false,
   isWin: false,
@@ -269,6 +325,17 @@ export function useGame() {
 
   const startGame = useCallback((settings: GameSettings) => {
     dispatch({ type: "INIT", settings });
+  }, []);
+
+  const startOnlineGame = useCallback(
+    (seed: string, playerIndex: 0 | 1, poolSize: PoolSize, handSize: number, difficulty: Difficulty) => {
+      dispatch({ type: "ONLINE_INIT", seed, playerIndex, poolSize, handSize, difficulty });
+    },
+    [],
+  );
+
+  const remotePeel = useCallback(() => {
+    dispatch({ type: "REMOTE_PEEL" });
   }, []);
 
   const restoreGame = useCallback(() => {
@@ -351,7 +418,8 @@ export function useGame() {
 
   const boardIsValid = validateBoard(state.board);
   const isBotMode = state.settings.gameMode === "bot";
-  const canPeelNow = isBotMode
+  const isOnlineMode = state.settings.gameMode === "online";
+  const canPeelNow = isBotMode || isOnlineMode
     ? canSharedPeel(state.hand, state.pool, state.board)
     : canPeel(state.hand, state.pool, state.board);
   const hasWon = checkWinCondition(state.hand, state.pool, state.board);
@@ -366,6 +434,7 @@ export function useGame() {
     canAct,
     hasWon,
     startGame,
+    startOnlineGame,
     restoreGame,
     saveGame,
     clearSave,
@@ -374,6 +443,7 @@ export function useGame() {
     moveTile,
     exchangeTile: exchangeTileAction,
     peel,
+    remotePeel,
     tick,
     endGame,
     botTick,

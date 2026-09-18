@@ -55,7 +55,7 @@ export type HandSize = 11 | 15 | 21;
 export type TimerMode = "none" | 5 | 10 | 15 | 30;
 
 export type BotDifficulty = "easy" | "medium" | "hard";
-export type GameMode = "solo" | "bot";
+export type GameMode = "solo" | "bot" | "online";
 
 export interface BotState {
   handSize: number;
@@ -126,6 +126,22 @@ export const EMPTY_STATS: GameStats = {
   bestTimes: {},
   records: [],
 };
+
+export interface Player {
+  id: number;
+  uuid: string;
+  username: string;
+  elo: number;
+}
+
+export interface OnlineGameState {
+  gameId: number;
+  seed: string;
+  localPlayerId: number;
+  playerIndex: 0 | 1; // 0 = creator, 1 = joiner
+  opponent: Player;
+  opponentConnected: boolean;
+}
 
 export const LETTER_POINTS: Record<Letter, number> = {
   A: 1,

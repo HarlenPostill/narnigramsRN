@@ -6,6 +6,7 @@ interface GameResultModalProps {
   emoji: string;
   title: string;
   subtitle: string;
+  eloDelta?: number;
   onDismiss: () => void;
 }
 
@@ -13,6 +14,7 @@ export function GameResultModal({
   emoji,
   title,
   subtitle,
+  eloDelta,
   onDismiss,
 }: GameResultModalProps) {
   const colors = useColors();
@@ -62,6 +64,17 @@ export function GameResultModal({
         >
           {subtitle}
         </Text>
+        {eloDelta !== undefined && (
+          <Text
+            style={{
+              fontSize: 20,
+              fontWeight: "700",
+              color: eloDelta >= 0 ? "#34C759" : "#FF3B30",
+            }}
+          >
+            {eloDelta >= 0 ? `+${eloDelta}` : `${eloDelta}`} ELO
+          </Text>
+        )}
         <Pressable
           onPress={onDismiss}
           style={{

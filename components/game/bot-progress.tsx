@@ -39,7 +39,9 @@ export function BotProgress({ botState, difficulty }: BotProgressProps) {
     >
       {/* Header */}
       <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-        <Text style={{ fontSize: 13, fontWeight: "700", color: colors.textPrimary }}>
+        <Text
+          style={{ fontSize: 13, fontWeight: "700", color: colors.textPrimary }}
+        >
           🤖 Bot
         </Text>
         <View
@@ -81,9 +83,7 @@ export function BotProgress({ botState, difficulty }: BotProgressProps) {
           {botState.tilesPlaced} placed
         </Text>
         <Text style={{ fontSize: 11, color: colors.textSecondary }}>
-          {botState.isFinished
-            ? "Finished!"
-            : `${botState.handSize} in hand`}
+          {botState.isFinished ? "Finished!" : `${botState.handSize} in hand`}
         </Text>
       </View>
     </View>

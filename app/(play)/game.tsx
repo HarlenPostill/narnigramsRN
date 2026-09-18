@@ -17,6 +17,7 @@ import Animated, {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { BotProgress } from "@/components/game/bot-progress";
+import { OpponentProgress } from "@/components/game/opponent-progress";
 import {
   BOARD_SIZE,
   GameBoard,
@@ -29,9 +30,10 @@ import { CELL_SIZE } from "@/components/game/tile";
 import { BIN_SIZE, TileBin } from "@/components/game/tile-bin";
 import { useColors } from "@/hooks/use-colors";
 import { useGame } from "@/hooks/use-game";
+import { useOnlineGame } from "@/hooks/use-online-game";
 import { useStorage } from "@/hooks/use-storage";
 import { formatTime, useTimer } from "@/hooks/use-timer";
-import type { GameSettings } from "@/types/game";
+import type { GameSettings, OnlineGameState } from "@/types/game";
 import { DEFAULT_SETTINGS } from "@/types/game";
 import {
   lightImpact,
@@ -42,11 +44,34 @@ import { recordGame } from "@/utils/stats-manager";
 
 export default function GameScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ resume?: string }>();
+  const params = useLocalSearchParams<{
+    resume?: string;
+    online?: string;
+    onlineState?: string;
+  }>();
   const insets = useSafeAreaInsets();
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
 
   const [settings] = useStorage<GameSettings>("settings", DEFAULT_SETTINGS);
+
+  const isOnline = params.online === "true";
+  const parsedOnlineState: OnlineGameState | null = isOnline && params.onlineState
+    ? JSON.parse(params.onlineState)
+    : null;
+
+  const offlineGame = useGame();
+  const onlineGame = useOnlineGame(
+    parsedOnlineState ?? {
+      gameId: 0,
+      seed: "",
+      localPlayerId: 0,
+      playerIndex: 0,
+      opponent: { id: 0, uuid: "", username: "", elo: 0 },
+      opponentConnected: false,
+    },
+  );
+
+  const activeGame = isOnline ? onlineGame : offlineGame;
 
   const {
     state,
@@ -64,7 +89,7 @@ export default function GameScreen() {
     endGame,
     botTick,
     validateWords,
-  } = useGame();
+  } = activeGame;
 
   const timerMinutes =
     settings.timerMode === "none" ? undefined : settings.timerMode;
@@ -100,6 +125,12 @@ export default function GameScreen() {
     if (didStart.current) return;
     didStart.current = true;
 
+    // Online games are initialized by the useOnlineGame hook
+    if (isOnline) {
+      timer.start();
+      return;
+    }
+
     if (params.resume === "true") {
       const restored = restoreGame();
       if (restored) {
@@ -109,7 +140,7 @@ export default function GameScreen() {
     }
     startGame(settings);
     timer.start();
-  }, [params.resume, restoreGame, settings, startGame, timer]);
+  }, [isOnline, params.resume, restoreGame, settings, startGame, timer]);
 
   // Sync timer to game state
   useEffect(() => {
@@ -123,12 +154,13 @@ export default function GameScreen() {
   // dispatching state changes from within useEffect (React Compiler issue)
   // and to give the player explicit control over word validation.
 
-  // Auto-save on state changes
+  // Auto-save on state changes (skip for online games)
   useEffect(() => {
+    if (isOnline) return;
     if (state.startedAt > 0 && !state.isComplete) {
       saveGame();
     }
-  }, [saveGame, state.hand.length, state.isComplete, state.startedAt]);
+  }, [isOnline, saveGame, state.hand.length, state.isComplete, state.startedAt]);
 
   // Bot tick interval (100ms)
   const isBotMode = state.settings.gameMode === "bot";
@@ -257,8 +289,14 @@ export default function GameScreen() {
     // Pool empty + hand empty = win
     if (state.pool.length === 0) {
       timer.pause();
-      endGame(true);
       successNotification();
+
+      if (isOnline && "onlineFinish" in activeGame) {
+        (activeGame as ReturnType<typeof useOnlineGame>).onlineFinish();
+      } else {
+        endGame(true);
+      }
+
       recordGame({
         id: `game-${Date.now()}`,
         date: new Date().toISOString(),
@@ -284,22 +322,41 @@ export default function GameScreen() {
     state.settings,
     timer,
     endGame,
+    isOnline,
+    activeGame,
   ]);
 
   const handleQuit = useCallback(() => {
-    Alert.alert("Leave Game?", "Your progress will be saved.", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Leave",
-        style: "destructive",
-        onPress: () => {
-          timer.pause();
-          saveGame();
-          router.back();
+    if (isOnline) {
+      Alert.alert("Forfeit Game?", "You will lose this ranked game.", [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Forfeit",
+          style: "destructive",
+          onPress: () => {
+            timer.pause();
+            if ("onlineForfeit" in activeGame) {
+              (activeGame as ReturnType<typeof useOnlineGame>).onlineForfeit();
+            }
+            router.back();
+          },
         },
-      },
-    ]);
-  }, [timer, saveGame, router]);
+      ]);
+    } else {
+      Alert.alert("Leave Game?", "Your progress will be saved.", [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Leave",
+          style: "destructive",
+          onPress: () => {
+            timer.pause();
+            saveGame();
+            router.back();
+          },
+        },
+      ]);
+    }
+  }, [isOnline, timer, saveGame, router, activeGame]);
 
   return (
     <GestureHandlerRootView
@@ -412,6 +469,26 @@ export default function GameScreen() {
         </View>
       )}
 
+      {/* Online opponent progress */}
+      {isOnline && parsedOnlineState && (
+        <View
+          style={{
+            position: "absolute",
+            top: insets.top + 75,
+            [settings.handMode === "left" ? "left" : "right"]: 16,
+          }}
+        >
+          <OpponentProgress
+            opponent={parsedOnlineState.opponent}
+            connected={
+              "opponentConnected" in activeGame
+                ? (activeGame as ReturnType<typeof useOnlineGame>).opponentConnected
+                : true
+            }
+          />
+        </View>
+      )}
+
       <View
         style={{ paddingBottom: insets.bottom }}
         onLayout={(e) => setHandHeight(e.nativeEvent.layout.height)}
@@ -449,8 +526,20 @@ export default function GameScreen() {
         />
       )}
 
+      {/* Online opponent wins */}
+      {state.isComplete && !state.isWin && isOnline && (
+        <GameResultModal
+          emoji="😞"
+          title="Opponent Wins!"
+          subtitle={`Your opponent finished first.\n${state.hand.length} tiles remaining in your hand`}
+          onDismiss={() => {
+            router.back();
+          }}
+        />
+      )}
+
       {/* Game Over (timer expired) — solo only */}
-      {state.isComplete && !state.isWin && !isBotMode && (
+      {state.isComplete && !state.isWin && !isBotMode && !isOnline && (
         <GameResultModal
           emoji="⏰"
           title="Time's Up!"

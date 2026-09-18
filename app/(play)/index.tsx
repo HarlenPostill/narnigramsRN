@@ -1,5 +1,6 @@
 import { ActionButton } from "@/components/home/action-button";
 import { StatsCard } from "@/components/stats/stats-card";
+import { useAuth } from "@/hooks/use-auth";
 import { useColors } from "@/hooks/use-colors";
 import { useStorage } from "@/hooks/use-storage";
 import type { GameSettings, GameState, GameStats } from "@/types/game";
@@ -133,6 +134,7 @@ function PresetCard({
 export default function HomeScreen() {
   const router = useRouter();
   const colors = useColors();
+  const { player } = useAuth();
   const [stats] = useStorage<GameStats>("game-stats", EMPTY_STATS);
 
   const [settings, setSettings] = useStorage<GameSettings>(
@@ -163,12 +165,12 @@ export default function HomeScreen() {
         />
         <Pressable
           style={{ flexGrow: 1 }}
-          onPress={() => router.push("/(play)/rank")}
+          onPress={() => router.push("/rank")}
         >
           <StatsCard
             hasInfo
             title="Rating"
-            value={"800"}
+            value={String(player?.elo ?? 800)}
             icon="trophy.fill"
             iconColor="#FFC800"
           />
@@ -178,12 +180,11 @@ export default function HomeScreen() {
       {/* Play Ranked */}
       <ActionButton
         label="Play Ranked"
-        rightLabel="GOLD"
+        rightLabel={player?.username ?? ""}
         iconName="trophy.fill"
-        onPress={() => router.push("/game")}
+        onPress={() => router.push("/queue" as any)}
         variant="primary"
         delay={0}
-        disabled
       />
 
       {/* Play Solo */}

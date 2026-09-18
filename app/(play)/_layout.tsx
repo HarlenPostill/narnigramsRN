@@ -29,6 +29,14 @@ export default function PlayLayout() {
         }}
       />
       <Stack.Screen
+        name="queue"
+        options={{
+          title: "Finding Match",
+          presentation: "fullScreenModal",
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
         name="game"
         options={{
           title: "Game",
