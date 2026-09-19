@@ -1,173 +1,144 @@
-import { supabase } from "@/lib/supabase";
-import type { OnlineGameState } from "@/types/game";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useGame } from "./use-game";
+import { getRepositories } from '@/lib/repositories';
+import type { MatchCommand, MatchSession } from '@/shared/online';
+import { ONLINE_PROTOCOL, RECONNECT_GRACE_MS } from '@/shared/online';
+import { DEFAULT_SETTINGS, type GameState, type Tile } from '@/types/game';
+import { validateBoard } from '@/utils/game-engine';
+import { boardBeforeExchange, canReconcileSession, commandOutcomeUnknown } from '@/utils/online-reconciliation';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { AppState } from 'react-native';
 
-interface GameEvent {
-  id: number;
-  game_id: number;
-  player_id: number;
-  event_type: "peel" | "finish" | "forfeit" | "heartbeat";
-  payload: Record<string, unknown>;
-  created_at: string;
-}
-
-const HEARTBEAT_INTERVAL = 10_000; // 10s
-const DISCONNECT_THRESHOLD = 30_000; // 30s
-const AUTO_WIN_THRESHOLD = 60_000; // 60s
-
-export function useOnlineGame(onlineState: OnlineGameState) {
-  const game = useGame();
-  const didInit = useRef(false);
-  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
-  const lastOpponentHeartbeat = useRef(Date.now());
-  const [opponentConnected, setOpponentConnected] = useState(true);
-
-  // Init the game from seed on mount
+export function useOnlineGame(matchId: string) {
+  const [session, setSession] = useState<MatchSession | null>(null);
+  const [board, setBoard] = useState<Record<string, Tile>>({});
+  const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const latest = useRef<MatchSession | null>(null);
+  const busy = useRef(false);
+  const heartbeatBusy = useRef(false);
+  const generation = useRef(0);
+  const activeMatch = useRef(matchId);
+  const optimistic = useRef(false);
+  const heartbeatError = useRef(false);
+  const mounted = useRef(true);
+  const failed = useRef<MatchCommand | null>(null);
+  const reconcile = useCallback((incoming: MatchSession) => {
+    if (!mounted.current || !canReconcileSession(latest.current, incoming, activeMatch.current)) return;
+    if (incoming.match.protocol !== ONLINE_PROTOCOL) { setError('This match requires a newer app version.'); return; }
+    latest.current = incoming; setSession(incoming);
+    if (heartbeatError.current && !failed.current) { heartbeatError.current = false; setError(null); }
+    if (!optimistic.current) setBoard(incoming.player.board);
+  }, []);
   useEffect(() => {
-    if (didInit.current || !onlineState.seed) return;
-    didInit.current = true;
-
-    game.startOnlineGame(
-      onlineState.seed,
-      onlineState.playerIndex,
-      72,
-      15,
-      "standard",
-    );
-  }, [onlineState, game]);
-
-  // Subscribe to game events
+    activeMatch.current = matchId;
+    const currentGeneration = generation.current + 1;
+    generation.current = currentGeneration;
+    latest.current = null; failed.current = null; busy.current = false; heartbeatBusy.current = false; optimistic.current = false; heartbeatError.current = false;
+    setSession(null); setBoard({}); setPending(false); setError(null);
+    return () => { generation.current = currentGeneration + 1; };
+  }, [matchId]);
   useEffect(() => {
-    if (!onlineState.gameId) return;
-
-    const channel = supabase
-      .channel(`game-events-${onlineState.gameId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "game_events",
-          filter: `game_id=eq.${onlineState.gameId}`,
-        },
-        (payload) => {
-          const event = payload.new as GameEvent;
-
-          // Only process events from the opponent (ignore our own)
-          if (event.player_id !== onlineState.localPlayerId) {
-            lastOpponentHeartbeat.current = Date.now();
-            setOpponentConnected(true);
-
-            switch (event.event_type) {
-              case "peel":
-                game.remotePeel();
-                break;
-              case "finish":
-                game.endGame(false);
-                break;
-              case "forfeit":
-                game.endGame(true);
-                break;
-              case "heartbeat":
-                // Just updates the timestamp above
-                break;
-            }
-          }
-        },
-      )
-      .subscribe();
-
-    channelRef.current = channel;
-
-    return () => {
-      supabase.removeChannel(channel);
+    mounted.current = true;
+    try {
+      const unsubscribe = getRepositories().matches.watch(matchId, reconcile, e => setError(e.message));
+      return () => { mounted.current = false; unsubscribe(); };
+    } catch (e) { setError(e instanceof Error ? e.message : 'Online services unavailable'); return () => { mounted.current = false; }; }
+  }, [matchId, reconcile, attempt]);
+  const send = useCallback(async (type: MatchCommand['type'], nextBoard?: Record<string, Tile>, tileId?: string, retryCommand?: MatchCommand) => {
+    const current = latest.current;
+    const heartbeat = type === 'heartbeat';
+    if (!current || current.match.id !== matchId || current.match.status !== 'active' || (heartbeat ? heartbeatBusy.current : busy.current)) return;
+    if (!heartbeat && failed.current && !retryCommand && type !== 'forfeit') return;
+    const requestGeneration = generation.current;
+    if (heartbeat) heartbeatBusy.current = true;
+    else { busy.current = true; optimistic.current = !!nextBoard; setPending(true); }
+    const command: MatchCommand = retryCommand ?? {
+      matchId, type, commandId: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      expectedSequence: current.match.sequence,
+      ...(nextBoard ? { board: Object.fromEntries(Object.entries(nextBoard).map(([key, tile]) => [key, tile.id])) } : {}),
+      ...(tileId ? { tileId } : {}),
     };
-  }, [onlineState.gameId, onlineState.localPlayerId, game]);
-
-  // Send heartbeats
-  useEffect(() => {
-    if (!onlineState.gameId || !onlineState.localPlayerId) return;
-
-    const interval = setInterval(() => {
-      supabase.from("game_events").insert({
-        game_id: onlineState.gameId,
-        player_id: onlineState.localPlayerId,
-        event_type: "heartbeat",
-        payload: {},
-      });
-    }, HEARTBEAT_INTERVAL);
-
-    return () => clearInterval(interval);
-  }, [onlineState.gameId, onlineState.localPlayerId]);
-
-  // Check opponent connectivity
-  useEffect(() => {
-    if (!onlineState.gameId) return;
-
-    const interval = setInterval(() => {
-      const elapsed = Date.now() - lastOpponentHeartbeat.current;
-
-      if (elapsed > AUTO_WIN_THRESHOLD && !game.state.isComplete) {
-        // Auto-win: opponent disconnected too long
-        game.endGame(true);
-        setOpponentConnected(false);
-      } else if (elapsed > DISCONNECT_THRESHOLD) {
-        setOpponentConnected(false);
+    try {
+      const result = await getRepositories().matches.command(command);
+      if (requestGeneration !== generation.current || !mounted.current) return;
+      if (!heartbeat) { optimistic.current = false; failed.current = null; heartbeatError.current = false; setError(null); }
+      reconcile(result);
+      if (!heartbeat) setBoard(latest.current?.player.board ?? {});
+    } catch (e) {
+      if (requestGeneration !== generation.current || !mounted.current) return;
+      if (!heartbeat) {
+        failed.current = commandOutcomeUnknown(e) ? command : null;
+        heartbeatError.current = false;
+        optimistic.current = false;
+        setBoard(latest.current?.player.board ?? {});
+        setError(e instanceof Error ? e.message : 'Connection lost. Retry to reconnect.');
+      } else if (!failed.current && !busy.current) { heartbeatError.current = true; setError('Connection interrupted. Reconnecting…'); }
+    } finally {
+      if (requestGeneration === generation.current) {
+        if (heartbeat) heartbeatBusy.current = false;
+        else { busy.current = false; if (mounted.current) setPending(false); }
       }
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, [onlineState.gameId, game]);
-
-  const localPlayerId = onlineState.localPlayerId;
-
-  // Broadcast a peel event
-  const onlinePeel = useCallback(() => {
-    game.peel();
-
-    supabase.from("game_events").insert({
-      game_id: onlineState.gameId,
-      player_id: localPlayerId,
-      event_type: "peel",
-      payload: {},
-    });
-  }, [game, onlineState.gameId, localPlayerId]);
-
-  // Broadcast a finish event
-  const onlineFinish = useCallback(async () => {
-    game.endGame(true);
-
-    await supabase.from("game_events").insert({
-      game_id: onlineState.gameId,
-      player_id: localPlayerId,
-      event_type: "finish",
-      payload: {},
-    });
-
-    await supabase.rpc("finish_game", {
-      p_game_id: onlineState.gameId,
-      p_winner_id: localPlayerId,
-    });
-  }, [game, onlineState.gameId, localPlayerId]);
-
-  // Broadcast a forfeit event
-  const onlineForfeit = useCallback(async () => {
-    game.endGame(false);
-
-    await supabase.from("game_events").insert({
-      game_id: onlineState.gameId,
-      player_id: localPlayerId,
-      event_type: "forfeit",
-      payload: {},
-    });
-  }, [game, onlineState.gameId, localPlayerId]);
-
+    }
+  }, [matchId, reconcile]);
+  useEffect(() => {
+    const pulse = () => { if (AppState.currentState === 'active' || AppState.currentState == null) void send('heartbeat'); };
+    const interval = setInterval(pulse, 20_000);
+    const subscription = AppState.addEventListener('change', state => { if (state === 'active') pulse(); });
+    return () => { clearInterval(interval); subscription.remove(); };
+  }, [send]);
+  useEffect(() => {
+    // Announce a restored session immediately, rather than waiting up to 20s near the lease deadline.
+    if (session?.match.id && session.match.status === 'active') void send('heartbeat');
+  }, [session?.match.id, session?.match.status, send]);
+  const owned = session ? [...session.player.hand, ...Object.values(session.player.board)] : [];
+  const onBoard = new Set(Object.values(board).map(tile => tile.id));
+  const hand = owned.filter(tile => !onBoard.has(tile.id));
+  const edit = useCallback((tileId: string, row?: number, col?: number) => {
+    if (busy.current || failed.current || !latest.current || latest.current.match.status !== 'active') return;
+    const current = latest.current.player;
+    const tile = [...current.hand, ...Object.values(current.board)].find(t => t.id === tileId);
+    if (!tile) return;
+    const next = { ...current.board };
+    if (row !== undefined && col !== undefined) {
+      if (!Number.isInteger(row) || !Number.isInteger(col) || row < 0 || col < 0 || row >= 40 || col >= 40 || next[`${row},${col}`]) return;
+    }
+    for (const key of Object.keys(next)) if (next[key].id === tileId) delete next[key];
+    if (row !== undefined && col !== undefined) next[`${row},${col}`] = tile;
+    setBoard(next); void send('board', next);
+  }, [send]);
+  const placeTile = useCallback((id: string, row: number, col: number) => edit(id, row, col), [edit]);
+  const returnTile = useCallback((id: string) => edit(id), [edit]);
+  const exchangeTile = useCallback((id: string) => {
+    const current = latest.current;
+    if (current) void send('exchange', boardBeforeExchange(current.player.board, id), id);
+  }, [send]);
+  const peel = useCallback(() => { void send('peel', latest.current?.player.board); }, [send]);
+  const onlineFinish = useCallback(() => { void send('finish', latest.current?.player.board); }, [send]);
+  const onlineForfeit = useCallback(() => send('forfeit'), [send]);
+  const retry = useCallback(() => {
+    if (failed.current) void send(failed.current.type, undefined, undefined, failed.current);
+    else { setError(null); setAttempt(value => value + 1); }
+  }, [send]);
+  const uid = getUid();
+  const match = session?.match;
+  const opponentId = match?.playerIds.find(id => id !== uid);
+  const opponent = opponentId ? match?.players[opponentId] : undefined;
+  const state: GameState = {
+    hand, board, pool: [], startedAt: match?.createdAt ?? 0,
+    elapsedMs: match ? Math.max(0, (match.result?.settledAt ?? Date.now()) - match.createdAt) : 0,
+    settings: { ...DEFAULT_SETTINGS, gameMode: 'online', timerMode: 'none' },
+    isComplete: !!match && match.status !== 'active', isWin: match?.result?.winnerId === uid,
+  };
   return {
-    ...game,
-    peel: onlinePeel,
-    onlineFinish,
-    onlineForfeit,
-    opponentConnected,
+    state, canAct: !pending && !failed.current && hand.length === 0 && Object.keys(board).length > 1 && validateBoard(board),
+    placeTile, moveTile: placeTile, returnTile, exchangeTile, peel,
+    validateWords: () => true, // The authoritative command validates the exact board and dictionary.
+    onlineFinish, onlineForfeit, pending: pending || failed.current !== null, error, retry,
+    dictionaryReady: true, dictionaryError: null,
+    poolCount: match?.poolCount ?? 0, opponent,
+    opponentConnected: !!opponentId && Date.now() - (match?.lastSeen[opponentId] ?? 0) < RECONNECT_GRACE_MS,
+    eloDelta: uid ? match?.result?.ratings[uid]?.delta : undefined,
+    resultReason: match?.result?.reason,
   };
 }
+function getUid() { try { return getRepositories().auth.currentUid(); } catch { return null; } }

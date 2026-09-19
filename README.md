@@ -1,50 +1,44 @@
-# Welcome to your Expo app 👋
+# Narnigrams
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Narnigrams is an iPhone-first word-tile game built with Expo, React Native and TypeScript. Arrange a connected board of valid English words, draw from a finite shared deck and finish with every tile placed.
 
-## Get started
+- **Solo:** Short (50 tiles), Medium (72), Long (100).
+- **Practice:** Easy, Medium or Hard deterministic AI using real tiles from the shared pool.
+- **Ranked Online:** Firebase-backed human matchmaking and server-settled ELO. After 10 seconds without a human match, the server offers a clearly identified, unranked AI fallback.
 
-1. Install dependencies
+Solo and Practice work without sign-in. Ranked creates an anonymous identity on demand and uses generated names. No payments, ads, analytics, tracking or chat are included.
 
-   ```bash
-   npm install
-   ```
+## Development
 
-2. Start the app
+Use Node 22. Install locked dependencies:
 
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```sh
+npm ci
+npm --prefix functions ci
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+For offline gameplay, start `npm run web` or `npm run ios`. Use the browser for fast debugging: inspect console/network errors, resize the viewport, and use independent browser profiles for two-player sessions. iOS remains the target; browser checks do not replace device gesture, lifecycle and accessibility testing.
 
-## Learn more
+For local Ranked, install Java 21 and run `npm run emulators`. Run `npm run web:emulator` in a second terminal; it supplies demo-only configuration without changing `.env`. For an iOS simulator, copy `.env.example` to `.env.local` and run `npm run ios`. The demo project and emulator ports are documented in [Firebase setup](docs/FIREBASE.md). Do not copy production credentials into emulator tests. Restart Expo after environment changes.
 
-To learn more about developing your project with Expo, look at the following resources:
+Firebase identifiers are public client configuration, not permission to access data. Server credentials must never enter an app bundle. Missing Firebase configuration leaves offline modes available and shows a Ranked setup error.
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## Verification and release
 
-## Join the community
+`npm run check` runs lint, typecheck, deterministic engine/backend tests and the Functions build. `npm run test:emulators` runs Firebase rules/callable/concurrency checks; `npm run check:ci` combines both. CI installs both lockfiles and runs the checks with a demo Firebase project. Run Expo diagnostics and a web export as well; record real iOS release/device QA using [App Review checklist](docs/APP_REVIEW.md).
 
-Join our community of developers creating universal apps.
+`eas.json` provides simulator, internal preview and production profiles. The owner must configure Expo/Apple project identities, signing and production environment values. Production Firebase deployment, privacy/support pages, App Privacy entries, artwork ownership confirmation and native App Check integration remain explicit release prerequisites. No live backend, support page or privacy-policy URL is fabricated here.
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## Code and decisions
+
+- [Verification record](docs/VERIFICATION.md): executed automated/browser/native checks and remaining release work.
+- [Architecture](docs/ARCHITECTURE.md): mode boundaries, queue races, authoritative match state, rating and anti-cheat limits.
+- [Firebase setup](docs/FIREBASE.md): schema, security, emulators, retention, deployment and Supabase migration.
+- [Privacy inventory](docs/PRIVACY.md): data handling, account deletion and policy publication requirements.
+- [App Review audit](docs/APP_REVIEW.md): code-referenced risks, manual acceptance matrix and reviewer notes.
+- [Dependency security](docs/DEPENDENCY_SECURITY.md): compatible updates, URI decoder backport and remaining tooling advisories.
+- [Asset provenance](docs/ASSET_PROVENANCE.md): pinned licensed ESDB dictionary, reproduction and remaining artwork rights checks.
+
+Pure game and rating logic lives in `utils/`; online contracts in `shared/`; client repository adapters in `lib/`; authoritative Functions in `functions/src/`. Firestore denies client writes and private opponent-state reads. Local bot wins never alter public ELO. Server validation does not prevent external solvers, collusion or repeated anonymous accounts.
+
+**Credential action required:** the old tracked `.env` was untracked and preserved locally, but its Supabase values remain in git history. Rotate/revoke those credentials and review the old service's access. Determine whether existing production players need an owner-controlled migration before retiring Supabase. No git-history rewrite or production-data deletion has been performed.

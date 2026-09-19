@@ -1,6 +1,6 @@
-import type { Difficulty, Letter } from "@/types/game";
+import type { Difficulty, Letter } from "../types/game";
 
-// Official Bananagrams distribution for 144 tiles
+// Inherited standard letter weights. Provenance and branding review: docs/ASSET_PROVENANCE.md.
 const STANDARD_144: Record<Letter, number> = {
   A: 13, B: 3, C: 3, D: 6, E: 18, F: 3, G: 4, H: 3, I: 12,
   J: 2, K: 2, L: 5, M: 3, N: 8, O: 11, P: 3, Q: 2, R: 9,

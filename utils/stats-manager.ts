@@ -21,24 +21,29 @@ function saveStats(stats: GameStats) {
 export function recordGame(record: GameRecord) {
   const stats = getStats();
 
+  if (stats.records.some((existing) => existing.id === record.id)) return;
+  const mode = record.gameMode ?? "solo";
+  const modeStats = stats.byMode?.[mode] ?? { games: 0, wins: 0 };
+  stats.byMode = { ...stats.byMode, [mode]: { games: modeStats.games + 1, wins: modeStats.wins + Number(record.isWin) } };
   stats.totalGames++;
   if (record.isWin) {
     stats.totalWins++;
-    stats.currentStreak++;
+    if (mode === "solo") stats.currentStreak++;
     if (stats.currentStreak > stats.bestStreak) {
       stats.bestStreak = stats.currentStreak;
     }
 
     const modeKey = `${record.difficulty}-${record.poolSize}` as const;
     const current = stats.bestTimes[modeKey];
-    if (!current || record.durationMs < current) {
+    if ((record.gameMode ?? "solo") === "solo" && (!current || record.durationMs < current)) {
       stats.bestTimes[modeKey] = record.durationMs;
     }
-  } else {
+  } else if (mode === "solo") {
     stats.currentStreak = 0;
   }
 
   stats.records.push(record);
+  stats.records = stats.records.slice(-500);
   saveStats(stats);
 }
 

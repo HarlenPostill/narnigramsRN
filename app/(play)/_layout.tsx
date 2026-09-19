@@ -1,11 +1,13 @@
+import { Platform } from "react-native";
 import { Stack } from "expo-router/stack";
-import { PlatformColor } from "react-native";
+
+import { PlatformColor } from "@/utils/platform-color";
 
 export default function PlayLayout() {
   return (
     <Stack
       screenOptions={{
-        headerTransparent: true,
+        headerTransparent: Platform.OS !== "web",
         headerShown: true,
         headerShadowVisible: false,
         headerLargeTitleShadowVisible: false,

@@ -1,5 +1,5 @@
 import { useColors } from "@/hooks/use-colors";
-import { SymbolView } from "expo-symbols";
+import { type SymbolViewProps, SymbolView } from "expo-symbols";
 import { Pressable, Text, View } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 
@@ -8,7 +8,7 @@ type ActionButtonVariant = "primary" | "outline" | "default";
 interface ActionButtonProps {
   label: string;
   rightLabel: string;
-  iconName: string;
+  iconName: SymbolViewProps["name"];
   onPress: () => void;
   variant?: ActionButtonVariant;
   delay?: number;
@@ -34,21 +34,23 @@ export function ActionButton({
   const isOutline = variant === "outline";
 
   const labelColor = isPrimary
-    ? colors.cardBg
+    ? "#FFFFFF"
     : isOutline
       ? "#007AFF"
       : colors.textPrimary;
 
   const resolvedRightLabelColor =
     rightLabelColor ??
-    (isPrimary ? colors.cardBg : isOutline ? "#007AFF" : undefined);
+    (isPrimary ? "#FFFFFF" : isOutline ? "#007AFF" : undefined);
 
   const resolvedIconTintColor =
-    iconTintColor ?? (isPrimary ? colors.cardBg : undefined);
+    iconTintColor ?? (isPrimary ? "#FFFFFF" : undefined);
 
   return (
     <Animated.View entering={FadeInDown.delay(delay).duration(400)}>
       <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ disabled }}
         onPress={disabled ? undefined : onPress}
         style={({ pressed }) => ({
           backgroundColor: isPrimary
@@ -102,7 +104,7 @@ export function ActionButton({
             </Text>
             <SymbolView
               size={16}
-              name={iconName as any}
+              name={iconName}
               tintColor={resolvedIconTintColor}
             />
           </View>

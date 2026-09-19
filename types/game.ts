@@ -58,6 +58,10 @@ export type BotDifficulty = "easy" | "medium" | "hard";
 export type GameMode = "solo" | "bot" | "online";
 
 export interface BotState {
+  hand: Tile[];
+  board: Record<string, Tile>;
+  seed: string;
+  decision: number;
   handSize: number;
   tilesPlaced: number;
   isFinished: boolean;
@@ -86,6 +90,8 @@ export const DEFAULT_SETTINGS: GameSettings = {
 };
 
 export interface GameState {
+  sessionId?: string;
+  savedAt?: number;
   hand: Tile[];
   pool: Tile[];
   board: Record<string, Tile>; // serializable version of BoardPlacements
@@ -99,6 +105,8 @@ export interface GameState {
 }
 
 export interface GameRecord {
+  gameMode?: GameMode;
+  botDifficulty?: BotDifficulty;
   id: string;
   date: string;
   durationMs: number;
@@ -110,6 +118,7 @@ export interface GameRecord {
 }
 
 export interface GameStats {
+  byMode?: Partial<Record<GameMode, { games: number; wins: number }>>;
   totalGames: number;
   totalWins: number;
   currentStreak: number;
@@ -126,22 +135,6 @@ export const EMPTY_STATS: GameStats = {
   bestTimes: {},
   records: [],
 };
-
-export interface Player {
-  id: number;
-  uuid: string;
-  username: string;
-  elo: number;
-}
-
-export interface OnlineGameState {
-  gameId: number;
-  seed: string;
-  localPlayerId: number;
-  playerIndex: 0 | 1; // 0 = creator, 1 = joiner
-  opponent: Player;
-  opponentConnected: boolean;
-}
 
 export const LETTER_POINTS: Record<Letter, number> = {
   A: 1,
@@ -171,3 +164,11 @@ export const LETTER_POINTS: Record<Letter, number> = {
   Y: 4,
   Z: 10,
 };
+
+export const SOLO_PRESETS = { short: { poolSize: 50, handSize: 11 }, medium: { poolSize: 72, handSize: 15 }, long: { poolSize: 100, handSize: 21 } } as const;
+export function soloSettings(length: keyof typeof SOLO_PRESETS, settings: GameSettings = DEFAULT_SETTINGS): GameSettings {
+  return { ...settings, ...SOLO_PRESETS[length], gameMode: "solo" };
+}
+export function practiceSettings(difficulty: BotDifficulty, settings: GameSettings = DEFAULT_SETTINGS): GameSettings {
+  return { ...settings, poolSize: 72, handSize: 15, gameMode: "bot", botDifficulty: difficulty };
+}

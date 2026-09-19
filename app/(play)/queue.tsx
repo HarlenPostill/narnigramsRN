@@ -1,226 +1,82 @@
-import { useAuth } from "@/hooks/use-auth";
-import { useColors } from "@/hooks/use-colors";
-import {
-  cancelQueue,
-  findOrCreateGame,
-  subscribeToGame,
-  type QueuedGame,
-} from "@/lib/matchmaking";
-import { getPlayer } from "@/lib/player-service";
-import type { OnlineGameState, Player } from "@/types/game";
-import { useRouter } from "expo-router";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Pressable, Text, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { isCurrentSearchSnapshot } from "@/utils/online-reconciliation";
+import { useAuth } from '@/hooks/use-auth';
+import { useColors } from '@/hooks/use-colors';
+import { commandId, getRepositories } from '@/lib/repositories';
+import type { QueueTicket } from '@/shared/online';
+import { useRouter } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
 export default function QueueScreen() {
-  const router = useRouter();
-  const insets = useSafeAreaInsets();
+  const { replace, back: goBack, canGoBack } = useRouter();
+  const back = useCallback(() => { if (canGoBack()) goBack(); else replace("/"); }, [goBack, canGoBack, replace]);
+  const { ensurePlayer } = useAuth();
   const colors = useColors();
-  const { player } = useAuth();
-
-  const [status, setStatus] = useState<"searching" | "found" | "error">(
-    "searching",
-  );
-  const [elapsedSec, setElapsedSec] = useState(0);
-  const gameRef = useRef<QueuedGame | null>(null);
-  const unsubRef = useRef<(() => void) | null>(null);
-
-  const handleMatchFound = useCallback(
-    async (game: QueuedGame) => {
-      if (!player) return;
-      setStatus("found");
-
-      const isCreator = game.creator_id === player.id;
-      const opponentId = isCreator ? game.opponent_id! : game.creator_id;
-
-      let opponent: Player;
-      try {
-        const opponentRecord = await getPlayer(opponentId);
-        opponent = {
-          id: opponentRecord.id,
-          uuid: opponentRecord.uuid,
-          username: opponentRecord.username,
-          elo: opponentRecord.elo,
-        };
-      } catch {
-        opponent = { id: opponentId, uuid: "", username: "Opponent", elo: 800 };
-      }
-
-      const onlineState: OnlineGameState = {
-        gameId: game.id,
-        seed: game.seed!,
-        localPlayerId: player.id,
-        playerIndex: isCreator ? 0 : 1,
-        opponent,
-        opponentConnected: true,
-      };
-
-      // Navigate to game with online state
-      router.replace({
-        pathname: "/game",
-        params: {
-          online: "true",
-          onlineState: JSON.stringify(onlineState),
-        },
-      });
-    },
-    [player, router],
-  );
-
+  const [error, setError] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
+  const [elapsed, setElapsed] = useState(0);
+  const [cancelling, setCancelling] = useState(false);
+  const resolved = useRef(false);
+  const searchId = useRef(commandId()).current;
   useEffect(() => {
-    if (!player) return;
-
-    let cancelled = false;
-
-    const startQueue = async () => {
+    let disposed = false;
+    let unsubscribe: (() => void) | undefined;
+    let timer: ReturnType<typeof setInterval> | undefined;
+    let busy = false;
+    const start = Date.now();
+    resolved.current = false; setError(null); setElapsed(0);
+    const accept = (ticket: QueueTicket | null) => {
+      if (!ticket || disposed || resolved.current) return;
+      if (ticket.status === 'matched' && ticket.matchId) {
+        resolved.current = true;
+        replace({ pathname: '/game', params: { matchId: ticket.matchId } });
+      } else if (ticket.status === 'fallback' && ticket.seed && ticket.botDifficulty) {
+        resolved.current = true;
+        replace({ pathname: '/game', params: { fallback: 'true', seed: ticket.seed, botDifficulty: ticket.botDifficulty } });
+      } else if (ticket.status === 'cancelled') { resolved.current = true; back(); }
+    };
+    void (async () => {
       try {
-        const game = await findOrCreateGame(player);
-        if (cancelled) return;
-        gameRef.current = game;
-
-        // If already matched (we joined someone else's game)
-        if (game.status === "in_progress") {
-          handleMatchFound(game);
-          return;
-        }
-
-        // Subscribe to our queued game for updates
-        unsubRef.current = subscribeToGame(game.id, (updated) => {
-          if (updated.status === "in_progress") {
-            handleMatchFound(updated);
-          }
-        });
-      } catch (err) {
-        console.warn("Matchmaking error:", err);
-        if (!cancelled) setStatus("error");
-      }
-    };
-
-    startQueue();
-
-    return () => {
-      cancelled = true;
-      unsubRef.current?.();
-    };
-  }, [player, handleMatchFound]);
-
-  // Elapsed time counter
-  useEffect(() => {
-    if (status !== "searching") return;
-    const interval = setInterval(() => {
-      setElapsedSec((s) => s + 1);
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [status]);
-
-  const handleCancel = async () => {
-    unsubRef.current?.();
-    if (gameRef.current) {
-      await cancelQueue(gameRef.current.id);
-    }
-    router.back();
+        await ensurePlayer();
+        if (disposed) return;
+        const repository = getRepositories().matchmaking;
+        const ticket = await repository.enqueue(searchId);
+        if (disposed) return;
+        accept(ticket);
+        if (resolved.current) return;
+        unsubscribe = repository.watch(snapshot => { if (isCurrentSearchSnapshot(snapshot, searchId)) accept(snapshot); }, e => { if (!disposed) setError(e.message); });
+        timer = setInterval(() => {
+          if (disposed || resolved.current || busy) return;
+          setElapsed(Math.floor((Date.now() - start) / 1000));
+          busy = true;
+          void repository.poll(searchId).then(accept).catch(e => { if (!disposed) setError(e instanceof Error ? e.message : 'Connection lost. Retry to reconnect.'); }).finally(() => { busy = false; });
+        }, 1000);
+      } catch (e) { if (!disposed) setError(e instanceof Error ? e.message : 'Unable to search'); }
+    })();
+    return () => { disposed = true; unsubscribe?.(); if (timer) clearInterval(timer); };
+  }, [attempt, ensurePlayer, replace, back, searchId]);
+  useEffect(() => () => {
+    if (!resolved.current) { try { void getRepositories().matchmaking.cancel(searchId).catch(() => {}); } catch { /* No configured backend. */ } }
+  }, [searchId]);
+  const cancel = async () => {
+    setCancelling(true);
+    try {
+      const ticket = await getRepositories().matchmaking.cancel(searchId);
+      resolved.current = true;
+      // A human claim that committed first wins the cancellation race.
+      if (ticket.status === 'matched' && ticket.matchId) replace({ pathname: '/game', params: { matchId: ticket.matchId } });
+      else back();
+    } catch (e) { setError(e instanceof Error ? e.message : 'Could not cancel. Please retry.'); }
+    finally { setCancelling(false); }
   };
-
-  const formatTime = (sec: number) => {
-    const m = Math.floor(sec / 60);
-    const s = sec % 60;
-    return `${m}:${s.toString().padStart(2, "0")}`;
-  };
-
-  return (
-    <View
-      style={{
-        flex: 1,
-        backgroundColor: colors.screenBg,
-        justifyContent: "center",
-        alignItems: "center",
-        paddingBottom: insets.bottom,
-        gap: 24,
-      }}
-    >
-      {status === "searching" && (
-        <>
-          <ActivityIndicator size="large" color="#007AFF" />
-          <Text
-            style={{
-              fontSize: 22,
-              fontWeight: "700",
-              color: colors.textPrimary,
-            }}
-          >
-            Finding opponent...
-          </Text>
-          <Text style={{ fontSize: 15, color: colors.textSecondary }}>
-            {formatTime(elapsedSec)}
-          </Text>
-          <Pressable
-            onPress={handleCancel}
-            style={{
-              marginTop: 32,
-              paddingHorizontal: 32,
-              paddingVertical: 14,
-              borderRadius: 14,
-              borderCurve: "continuous",
-              backgroundColor: colors.cardBg,
-              boxShadow: colors.cardShadow,
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 17,
-                fontWeight: "600",
-                color: "#FF3B30",
-              }}
-            >
-              Cancel
-            </Text>
-          </Pressable>
-        </>
-      )}
-
-      {status === "found" && (
-        <>
-          <Text
-            style={{
-              fontSize: 22,
-              fontWeight: "700",
-              color: colors.textPrimary,
-            }}
-          >
-            Match found!
-          </Text>
-          <ActivityIndicator size="small" color="#34C759" />
-        </>
-      )}
-
-      {status === "error" && (
-        <>
-          <Text
-            style={{
-              fontSize: 22,
-              fontWeight: "700",
-              color: colors.textPrimary,
-            }}
-          >
-            Something went wrong
-          </Text>
-          <Pressable
-            onPress={() => router.back()}
-            style={{
-              paddingHorizontal: 32,
-              paddingVertical: 14,
-              borderRadius: 14,
-              borderCurve: "continuous",
-              backgroundColor: "#007AFF",
-            }}
-          >
-            <Text style={{ color: "white", fontWeight: "600", fontSize: 17 }}>
-              Go Back
-            </Text>
-          </Pressable>
-        </>
-      )}
-    </View>
-  );
+  return <View style={[styles.screen, { backgroundColor: colors.screenBg }]}>
+    {!error && <ActivityIndicator size="large" />}
+    <Text accessibilityRole="header" style={[styles.title, { color: colors.textPrimary }]}>{error ? 'Unable to connect' : 'Finding a human opponent'}</Text>
+    <Text accessibilityLiveRegion="polite" style={{ color: colors.textSecondary, textAlign: 'center' }}>{error ?? `${elapsed}s · Searching by rating`}</Text>
+    <Text style={{ color: colors.textSecondary, textAlign: 'center' }}>After 10 seconds, you’ll play an AI practice match if no human is available. AI matches do not affect your rating.</Text>
+    <Text style={{ color: colors.textSecondary, textAlign: 'center' }}>Ranked creates an anonymous account and stores your generated name, rating and match activity. Manage your data in Settings.</Text>
+    {error !== null && <Pressable accessibilityRole="button" style={styles.button} onPress={() => setAttempt(x => x + 1)}><Text style={styles.buttonText}>Retry</Text></Pressable>}
+    <Pressable accessibilityRole="button" disabled={cancelling} style={styles.button} onPress={() => { void cancel(); }}><Text style={styles.buttonText}>{cancelling ? 'Cancelling…' : 'Cancel'}</Text></Pressable>
+  </View>;
 }
+const styles = StyleSheet.create({ screen: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 28, gap: 22 }, title: { fontSize: 24, fontWeight: '700', textAlign: 'center' }, button: { minHeight: 48, justifyContent: 'center', paddingHorizontal: 32, borderRadius: 14, borderCurve: 'continuous', backgroundColor: '#0062FF' }, buttonText: { color: '#fff', fontSize: 17, fontWeight: '600' } });

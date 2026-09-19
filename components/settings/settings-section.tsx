@@ -1,5 +1,6 @@
 import { useColors } from "@/hooks/use-colors";
-import { PlatformColor, Text, View } from "react-native";
+import { Text, View } from "react-native";
+import { PlatformColor } from "@/utils/platform-color";
 
 interface SettingsSectionProps {
   title: string;

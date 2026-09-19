@@ -1,97 +1,55 @@
-import { supabase } from "@/lib/supabase";
-import type { PlayerRecord } from "@/lib/player-service";
-import { getOrCreatePlayer } from "@/lib/player-service";
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useState,
-} from "react";
-import type { ReactNode } from "react";
-import { createElement } from "react";
+import { getRepositories, hasFirebaseConfiguration } from '@/lib/repositories';
+import type { PlayerProfile } from '@/shared/online';
+import { createContext, createElement, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 
 interface AuthState {
   isLoading: boolean;
-  player: PlayerRecord | null;
-  needsUsername: boolean;
-  setNeedsUsername: (v: boolean) => void;
+  hasAccount: boolean;
+  player: PlayerProfile | null;
+  error: string | null;
+  ensurePlayer: () => Promise<PlayerProfile>;
   refreshPlayer: () => Promise<void>;
+  deleteAccount: () => Promise<void>;
 }
-
-const AuthContext = createContext<AuthState>({
-  isLoading: true,
-  player: null,
-  needsUsername: false,
-  setNeedsUsername: () => {},
-  refreshPlayer: async () => {},
-});
-
+const AuthContext = createContext<AuthState | null>(null);
 export function useAuth() {
-  return useContext(AuthContext);
+  const context = useContext(AuthContext);
+  if (!context) throw new Error('AuthProvider is missing');
+  return context;
 }
-
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [isLoading, setIsLoading] = useState(true);
-  const [player, setPlayer] = useState<PlayerRecord | null>(null);
-  const [needsUsername, setNeedsUsername] = useState(false);
-
-  const initAuth = useCallback(async () => {
-    try {
-      // Check for existing session
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      let userId: string;
-
-      if (session?.user) {
-        userId = session.user.id;
-      } else {
-        // Sign in anonymously
-        const { data, error } = await supabase.auth.signInAnonymously();
-        if (error) throw error;
-        userId = data.user!.id;
-      }
-
-      // Get or create player record
-      const playerRecord = await getOrCreatePlayer(userId);
-      setPlayer(playerRecord);
-
-      // Check if username looks auto-generated
-      if (playerRecord.username.startsWith("Player")) {
-        setNeedsUsername(true);
-      }
-    } catch (err) {
-      console.warn("Auth init failed:", err);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  const refreshPlayer = useCallback(async () => {
-    if (!player) return;
-    try {
-      const { data } = await supabase
-        .from("players")
-        .select("*")
-        .eq("id", player.id)
-        .single();
-      if (data) setPlayer(data as PlayerRecord);
-    } catch (err) {
-      console.warn("Failed to refresh player:", err);
-    }
-  }, [player]);
-
+  const [hasAccount, setHasAccount] = useState(false);
+  const [player, setPlayer] = useState<PlayerProfile | null>(null);
+  const [isLoading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  // Restores an existing identity; never creates an account until Ranked is opened.
   useEffect(() => {
-    initAuth();
-  }, [initAuth]);
-
-  return createElement(
-    AuthContext.Provider,
-    {
-      value: { isLoading, player, needsUsername, setNeedsUsername, refreshPlayer },
-    },
-    children,
-  );
+    if (!hasFirebaseConfiguration()) return;
+    let unsubscribeProfile: (() => void) | undefined;
+    try {
+      const repositories = getRepositories();
+      const unsubscribe = repositories.auth.watchAuth(uid => {
+        unsubscribeProfile?.();
+        setHasAccount(uid !== null);
+        if (uid) unsubscribeProfile = repositories.profiles.watch(setPlayer, e => setError(e.message));
+        else setPlayer(null);
+      });
+      return () => { unsubscribe(); unsubscribeProfile?.(); };
+    } catch (e) { setError(e instanceof Error ? e.message : 'Online services unavailable'); }
+  }, []);
+  const ensurePlayer = useCallback(async () => {
+    setLoading(true); setError(null);
+    try { const profile = await getRepositories().auth.ensurePlayer(); setPlayer(profile); return profile; }
+    catch (e) { setError(e instanceof Error ? e.message : 'Unable to connect'); throw e; }
+    finally { setLoading(false); }
+  }, []);
+  const refreshPlayer = useCallback(async () => {
+    if (!hasFirebaseConfiguration()) return;
+    try { setPlayer(await getRepositories().profiles.get()); }
+    catch (e) { setError(e instanceof Error ? e.message : 'Unable to refresh rating'); }
+  }, []);
+  const deleteAccount = useCallback(async () => {
+    await getRepositories().auth.deleteAccount(); setPlayer(null); setHasAccount(false);
+  }, []);
+  return createElement(AuthContext.Provider, { value: { player, hasAccount, isLoading, error, ensurePlayer, refreshPlayer, deleteAccount } }, children);
 }

@@ -1,4 +1,5 @@
-import { View, Text, PlatformColor } from "react-native";
+import { View, Text } from "react-native";
+import { PlatformColor } from "@/utils/platform-color";
 import { useColors } from "@/hooks/use-colors";
 import type { GameRecord } from "@/types/game";
 

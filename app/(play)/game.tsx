@@ -1,8 +1,8 @@
+import { useConfirm } from "@/components/ui/use-confirm";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  Alert,
-  PlatformColor,
+  ActivityIndicator,
   Pressable,
   Text,
   useWindowDimensions,
@@ -33,7 +33,7 @@ import { useGame } from "@/hooks/use-game";
 import { useOnlineGame } from "@/hooks/use-online-game";
 import { useStorage } from "@/hooks/use-storage";
 import { formatTime, useTimer } from "@/hooks/use-timer";
-import type { GameSettings, OnlineGameState } from "@/types/game";
+import type { GameSettings, BotDifficulty } from "@/types/game";
 import { DEFAULT_SETTINGS } from "@/types/game";
 import {
   lightImpact,
@@ -42,70 +42,67 @@ import {
 } from "@/utils/haptics";
 import { recordGame } from "@/utils/stats-manager";
 
+type GameController = Pick<ReturnType<typeof useGame>, 'state' | 'canAct' | 'placeTile' | 'returnTile' | 'moveTile' | 'exchangeTile' | 'peel' | 'validateWords' | 'dictionaryReady' | 'dictionaryError'> & {
+  saveGame?: () => void;
+  clearSave?: () => void;
+  tick?: (elapsed: number) => void;
+  endGame?: (win: boolean) => void;
+  botTick?: (now: number) => void;
+  onlineFinish?: () => void;
+  onlineForfeit?: () => Promise<void>;
+  poolCount?: number;
+  opponent?: { displayName: string; rating: number };
+  opponentConnected?: boolean;
+  pending?: boolean;
+  error?: string | null;
+  retry?: () => void;
+  retryDictionary?: () => void;
+  eloDelta?: number;
+  resultReason?: string;
+};
+
 export default function GameScreen() {
-  const router = useRouter();
-  const params = useLocalSearchParams<{
-    resume?: string;
-    online?: string;
-    onlineState?: string;
-  }>();
+  const params = useLocalSearchParams<{ matchId?: string; resume?: string; fallback?: string; seed?: string; botDifficulty?: string }>();
+  if (typeof params.matchId === "string" && /^[A-Za-z0-9_-]{1,100}$/.test(params.matchId)) return <OnlineSession key={params.matchId} matchId={params.matchId} />;
+  return <OfflineSession key={`${params.fallback ?? "offline"}-${params.seed ?? params.resume ?? "new"}`} resume={params.resume === 'true'} fallback={params.fallback === 'true'} seed={params.seed} difficulty={params.botDifficulty} />;
+}
+function OnlineSession({ matchId }: { matchId: string }) {
+  const game = useOnlineGame(matchId);
+  return <GameSurface game={game} isOnline />;
+}
+function OfflineSession({ resume, fallback, seed, difficulty }: { resume: boolean; fallback: boolean; seed?: string; difficulty?: string }) {
+  const game = useGame();
+  const { startGame, restoreGame } = game;
+  const [settings] = useStorage<GameSettings>('settings', DEFAULT_SETTINGS);
+  const started = useRef(false);
+  useEffect(() => {
+    if (started.current) return;
+    started.current = true;
+    if (resume && restoreGame()) return;
+    const botDifficulty: BotDifficulty = difficulty === 'easy' || difficulty === 'hard' ? difficulty : 'medium';
+    startGame(fallback ? { ...settings, gameMode: 'bot', botDifficulty, poolSize: 72, handSize: 15, difficulty: 'standard', timerMode: 'none' } : settings, fallback ? seed : undefined);
+  }, [resume, fallback, seed, difficulty, settings, startGame, restoreGame]);
+  return <GameSurface game={game} isOnline={false} fallback={fallback} />;
+}
+function GameSurface({ game: activeGame, isOnline, fallback = false }: { game: GameController; isOnline: boolean; fallback?: boolean }) {
+  const { back: goBack, canGoBack, replace } = useRouter();
+  const back = useCallback(() => { if (canGoBack()) goBack(); else replace("/"); }, [goBack, canGoBack, replace]);
   const insets = useSafeAreaInsets();
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
-
-  const [settings] = useStorage<GameSettings>("settings", DEFAULT_SETTINGS);
-
-  const isOnline = params.online === "true";
-  const parsedOnlineState: OnlineGameState | null = isOnline && params.onlineState
-    ? JSON.parse(params.onlineState)
-    : null;
-
-  const offlineGame = useGame();
-  const onlineGame = useOnlineGame(
-    parsedOnlineState ?? {
-      gameId: 0,
-      seed: "",
-      localPlayerId: 0,
-      playerIndex: 0,
-      opponent: { id: 0, uuid: "", username: "", elo: 0 },
-      opponentConnected: false,
-    },
-  );
-
-  const activeGame = isOnline ? onlineGame : offlineGame;
-
-  const {
-    state,
-    canAct,
-    startGame,
-    restoreGame,
-    saveGame,
-    clearSave,
-    placeTile,
-    returnTile,
-    moveTile,
-    exchangeTile,
-    peel,
-    tick,
-    endGame,
-    botTick,
-    validateWords,
-  } = activeGame;
-
-  const timerMinutes =
-    settings.timerMode === "none" ? undefined : settings.timerMode;
-
-  const timer = useTimer({
-    countdownMinutes: timerMinutes,
-    onExpire: () => {
-      endGame(false);
-    },
-  });
-
+  const { state, canAct, saveGame, clearSave, placeTile, returnTile, moveTile, exchangeTile, peel, tick, endGame, botTick, validateWords, onlineFinish, onlineForfeit } = activeGame;
+  const settings = state.settings;
+  const poolCount = activeGame.poolCount ?? state.pool.length;
+  const finishAvailable = poolCount < (settings.gameMode === 'solo' ? 1 : 2);
+  const onExpire = useCallback(() => endGame?.(false), [endGame]);
+  const timer = useTimer({ countdownMinutes: settings.timerMode === 'none' ? undefined : settings.timerMode, onExpire });
+  const { start: startTimer, pause: pauseTimer, elapsedMs, countdownMs, isRunning } = timer;
   const colors = useColors();
+  const { confirm, dialog } = useConfirm();
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   const [binHighlighted, setBinHighlighted] = useState(false);
-  const [showWinModal, setShowWinModal] = useState(false);
   const [handHeight, setHandHeight] = useState(180);
+  const [surfaceHeight, setSurfaceHeight] = useState(screenHeight);
   const didStart = useRef(false);
 
   // Board transform shared values (lifted here so drop logic can read them)
@@ -120,57 +117,29 @@ export default function GameScreen() {
   const boardContainerY = useRef(0);
   const boardContainerHeight = useRef(screenHeight);
 
-  // Start or restore game on mount
   useEffect(() => {
-    if (didStart.current) return;
+    if (didStart.current || state.startedAt === 0) return;
     didStart.current = true;
-
-    // Online games are initialized by the useOnlineGame hook
-    if (isOnline) {
-      timer.start();
-      return;
-    }
-
-    if (params.resume === "true") {
-      const restored = restoreGame();
-      if (restored) {
-        timer.start();
-        return;
-      }
-    }
-    startGame(settings);
-    timer.start();
-  }, [isOnline, params.resume, restoreGame, settings, startGame, timer]);
-
-  // Sync timer to game state
+    startTimer(state.elapsedMs);
+  }, [state.startedAt, state.elapsedMs, startTimer]);
+  useEffect(() => { if (isRunning) tick?.(elapsedMs); }, [tick, elapsedMs, isRunning]);
   useEffect(() => {
-    if (timer.isRunning) {
-      tick(timer.elapsedMs);
-    }
-  }, [tick, timer.elapsedMs, timer.isRunning]);
-
-  // Win is now triggered by the player pressing the Peel/Narnigrams button
-  // (see handlePeel). This effect is intentionally removed to avoid
-  // dispatching state changes from within useEffect (React Compiler issue)
-  // and to give the player explicit control over word validation.
-
-  // Auto-save on state changes (skip for online games)
-  useEffect(() => {
-    if (isOnline) return;
-    if (state.startedAt > 0 && !state.isComplete) {
-      saveGame();
-    }
-  }, [isOnline, saveGame, state.hand.length, state.isComplete, state.startedAt]);
-
-  // Bot tick interval (100ms)
-  const isBotMode = state.settings.gameMode === "bot";
+    if (isOnline || state.startedAt === 0 || state.isComplete) return;
+    saveGame?.();
+  }, [isOnline, saveGame, state]);
+  const isBotMode = state.settings.gameMode === 'bot';
   useEffect(() => {
     if (!isBotMode || state.isComplete || state.startedAt === 0) return;
-    const interval = setInterval(() => {
-      botTick(Date.now());
-    }, 100);
+    const interval = setInterval(() => botTick?.(Date.now()), 500);
     return () => clearInterval(interval);
   }, [isBotMode, state.isComplete, state.startedAt, botTick]);
+  const recorded = useRef(false);
+  useEffect(() => {
+    if (!state.isComplete || recorded.current) return;
+    recorded.current = true; pauseTimer(); clearSave?.();
+    if (activeGame.resultReason === "abandoned") return;
+    recordGame({ id: `game-${state.sessionId ?? state.startedAt}`, date: new Date().toISOString(), durationMs: state.elapsedMs, difficulty: settings.difficulty, poolSize: settings.poolSize, timerMode: settings.timerMode, isWin: state.isWin, tilesPlaced: Object.keys(state.board).length, gameMode: settings.gameMode });
+  }, [state, settings, pauseTimer, clearSave, activeGame.resultReason]);
 
   // Convert absolute screen position to board grid coordinates
   // accounting for the board's pan/zoom transform
@@ -183,9 +152,9 @@ export default function GameScreen() {
       const baseTop = -(BOARD_SIZE - screenHeight) / 2;
 
       // Current transform values
-      const s = boardScale.value;
-      const tx = boardTranslateX.value;
-      const ty = boardTranslateY.value;
+      const s = boardScale.get();
+      const tx = boardTranslateX.get();
+      const ty = boardTranslateY.get();
 
       // Position relative to board container
       const relX = absX;
@@ -213,12 +182,13 @@ export default function GameScreen() {
   // Drop zone detection
   const handleTileDragEnd = useCallback(
     (tileId: string, absX: number, absY: number) => {
+      if (activeGame.pending || state.isComplete) return;
       const isFromHand = state.hand.some((t) => t.id === tileId);
       const isFromBoard = Object.values(state.board).some(
         (t) => t.id === tileId,
       );
 
-      const handTop = screenHeight - handHeight;
+      const handTop = surfaceHeight - handHeight;
       const binAreaTop = handTop - BIN_SIZE - 16;
 
       // Bin position depends on handMode: right side when "right", left side when "left"
@@ -232,7 +202,7 @@ export default function GameScreen() {
         absX < binRight &&
         absY > binAreaTop &&
         absY < binAreaTop + BIN_SIZE &&
-        state.pool.length >= 2
+        poolCount >= 2
       ) {
         exchangeTile(tileId);
         mediumImpact();
@@ -261,10 +231,12 @@ export default function GameScreen() {
       lightImpact();
     },
     [
+      activeGame.pending,
+      state.isComplete,
       state.hand,
       state.board,
-      state.pool.length,
-      screenHeight,
+      poolCount,
+      surfaceHeight,
       screenWidth,
       handHeight,
       settings.handMode,
@@ -277,98 +249,40 @@ export default function GameScreen() {
   );
 
   const handlePeel = useCallback(() => {
-    const wordsValid = validateWords();
-    if (!wordsValid) {
-      Alert.alert(
-        "Invalid Words",
-        "Some words on your board aren't valid Narnigram words. Fix them first!",
-      );
+    if (!validateWords()) {
+      setValidationError('Connect your tiles into valid words before peeling. Invalid tiles are marked.');
       return;
     }
-
-    // Pool empty + hand empty = win
-    if (state.pool.length === 0) {
-      timer.pause();
-      successNotification();
-
-      if (isOnline && "onlineFinish" in activeGame) {
-        (activeGame as ReturnType<typeof useOnlineGame>).onlineFinish();
-      } else {
-        endGame(true);
-      }
-
-      recordGame({
-        id: `game-${Date.now()}`,
-        date: new Date().toISOString(),
-        durationMs: timer.elapsedMs,
-        difficulty: state.settings.difficulty,
-        poolSize: state.settings.poolSize,
-        timerMode: state.settings.timerMode,
-        isWin: true,
-        tilesPlaced: Object.keys(state.board).length,
-      });
-      setShowWinModal(true);
-      mediumImpact();
-      return;
-    }
-
-    peel();
+    setValidationError(null);
+    if (finishAvailable) {
+      if (isOnline) onlineFinish?.();
+      else { endGame?.(true); successNotification(); }
+    } else peel();
     mediumImpact();
-  }, [
-    peel,
-    validateWords,
-    state.pool.length,
-    state.board,
-    state.settings,
-    timer,
-    endGame,
-    isOnline,
-    activeGame,
-  ]);
-
+  }, [validateWords, finishAvailable, isOnline, onlineFinish, endGame, peel]);
+  const leave = useCallback(async () => {
+    if (isOnline) { if (state.startedAt === 0 || activeGame.error) { back(); return; } await onlineForfeit?.(); return; }
+    pauseTimer(); saveGame?.(); back();
+  }, [isOnline, onlineForfeit, pauseTimer, saveGame, back, state.startedAt, activeGame.error]);
   const handleQuit = useCallback(() => {
-    if (isOnline) {
-      Alert.alert("Forfeit Game?", "You will lose this ranked game.", [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Forfeit",
-          style: "destructive",
-          onPress: () => {
-            timer.pause();
-            if ("onlineForfeit" in activeGame) {
-              (activeGame as ReturnType<typeof useOnlineGame>).onlineForfeit();
-            }
-            router.back();
-          },
-        },
-      ]);
-    } else {
-      Alert.alert("Leave Game?", "Your progress will be saved.", [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Leave",
-          style: "destructive",
-          onPress: () => {
-            timer.pause();
-            saveGame();
-            router.back();
-          },
-        },
-      ]);
-    }
-  }, [isOnline, timer, saveGame, router, activeGame]);
+    const unavailable = isOnline && (state.startedAt === 0 || activeGame.error);
+    const title = unavailable ? 'Leave match screen?' : isOnline ? 'Forfeit ranked game?' : 'Leave game?';
+    const message = unavailable ? 'Your match may still be active. Open Ranked to reconnect; disconnect rules still apply.' : isOnline ? 'This counts as a ranked loss.' : 'Your progress will be saved.';
+    confirm(title, message, () => { void leave(); }, unavailable ? 'Leave' : isOnline ? 'Forfeit' : 'Leave');
+  }, [isOnline, leave, state.startedAt, activeGame.error, confirm]);
 
   return (
     <GestureHandlerRootView
+      onLayout={event => setSurfaceHeight(event.nativeEvent.layout.height)}
       style={{ flex: 1, backgroundColor: colors.screenBg }}
     >
       <GameHeader
-        elapsedMs={timer.elapsedMs}
-        countdownMs={timer.countdownMs}
+        elapsedMs={elapsedMs}
+        countdownMs={countdownMs}
         showTimer={
           state.settings.showTimer || state.settings.timerMode !== "none"
         }
-        tilesInPool={state.pool.length}
+        tilesInPool={poolCount}
         tilesInHand={state.hand.length}
       />
 
@@ -401,17 +315,18 @@ export default function GameScreen() {
           gap: 12,
         }}
       >
-        {canAct && !state.isComplete && (
+        {!!canAct && !state.isComplete && (
           <Animated.View
             entering={FadeIn}
             exiting={FadeOut}
             style={{ flexGrow: 1 }}
           >
             <Pressable
+              accessibilityRole="button"
               onPress={handlePeel}
               style={{
                 backgroundColor:
-                  state.pool.length === 0 ? "#2E7D32" : "#0062FF",
+                  finishAvailable ? "#2E7D32" : "#0062FF",
                 paddingHorizontal: 12,
                 height: 77,
                 justifyContent: "center",
@@ -422,39 +337,40 @@ export default function GameScreen() {
               }}
             >
               <Text style={{ color: "white", fontWeight: "700", fontSize: 15 }}>
-                {state.pool.length === 0 ? "Narnigrams!" : "Peel!"}
+                {finishAvailable ? "Narnigrams!" : "Peel!"}
               </Text>
             </Pressable>
           </Animated.View>
         )}
         <TileBin
-          isActive={state.pool.length >= 2}
+          isActive={poolCount >= 2}
           isHighlighted={binHighlighted}
         />
       </View>
 
       {/* Quit button */}
       <Pressable
+        accessibilityRole="button"
         onPress={handleQuit}
         style={{
           position: "absolute",
           left: settings.handMode === "left" ? screenWidth - 16 - 125 : 16,
           top: insets.top + 75,
           width: 125,
-          height: 40,
+          minHeight: 44,
           borderRadius: 20,
           backgroundColor: colors.buttonMutedBg,
           justifyContent: "center",
           alignItems: "center",
         }}
       >
-        <Text style={{ fontSize: 18, color: PlatformColor("secondaryLabel") }}>
+        <Text style={{ fontSize: 18, color: colors.textSecondary }}>
           Leave Game
         </Text>
       </Pressable>
 
       {/* Bot progress */}
-      {isBotMode && state.botState && (
+      {!!isBotMode && !!state.botState && (
         <View
           style={{
             position: "absolute",
@@ -469,25 +385,13 @@ export default function GameScreen() {
         </View>
       )}
 
-      {/* Online opponent progress */}
-      {isOnline && parsedOnlineState && (
-        <View
-          style={{
-            position: "absolute",
-            top: insets.top + 75,
-            [settings.handMode === "left" ? "left" : "right"]: 16,
-          }}
-        >
-          <OpponentProgress
-            opponent={parsedOnlineState.opponent}
-            connected={
-              "opponentConnected" in activeGame
-                ? (activeGame as ReturnType<typeof useOnlineGame>).opponentConnected
-                : true
-            }
-          />
-        </View>
-      )}
+      {isOnline && activeGame.opponent ? <View style={{ position: 'absolute', top: insets.top + 75, right: 16 }}><OpponentProgress opponent={activeGame.opponent} connected={activeGame.opponentConnected ?? false} /></View> : null}
+      {(validationError || fallback || activeGame.error || !activeGame.dictionaryReady || activeGame.pending || state.startedAt === 0) ? <View style={{ position: 'absolute', top: insets.top + 130, left: 16, right: 16, padding: 12, borderRadius: 12, backgroundColor: colors.cardBg }}>
+        <Text accessibilityLiveRegion="polite" style={{ color: colors.textPrimary }}>{validationError ?? activeGame.error ?? activeGame.dictionaryError ?? (!activeGame.dictionaryReady ? 'Loading dictionary…' : state.startedAt === 0 ? 'Connecting to match…' : activeGame.pending ? 'Syncing move…' : 'AI fallback · practice only · no rating change')}</Text>
+        {activeGame.dictionaryError && activeGame.retryDictionary ? <Pressable accessibilityRole="button" onPress={activeGame.retryDictionary} style={{ padding: 12 }}><Text style={{ color: "#007AFF" }}>Retry dictionary</Text></Pressable> : null}
+        {(activeGame.error && activeGame.retry) ? <Pressable accessibilityRole="button" onPress={activeGame.retry} style={{ padding: 12 }}><Text style={{ color: '#007AFF' }}>Retry connection</Text></Pressable> : null}
+        {state.startedAt === 0 && !activeGame.error ? <ActivityIndicator /> : null}
+      </View> : null}
 
       <View
         style={{ paddingBottom: insets.bottom }}
@@ -496,60 +400,14 @@ export default function GameScreen() {
         <PlayerHand tiles={state.hand} onDragEnd={handleTileDragEnd} />
       </View>
 
-      {/* Win Modal */}
-      {showWinModal && (
-        <GameResultModal
-          emoji="🎉"
-          title="You Won!"
-          subtitle={
-            isBotMode
-              ? `You beat the bot in ${formatTime(timer.elapsedMs)}!\n${Object.keys(state.board).length} tiles placed`
-              : `Completed in ${formatTime(timer.elapsedMs)}\n${Object.keys(state.board).length} tiles placed`
-          }
-          onDismiss={() => {
-            clearSave();
-            router.back();
-          }}
-        />
-      )}
-
-      {/* Bot finished first — loss */}
-      {state.isComplete && !state.isWin && isBotMode && (
-        <GameResultModal
-          emoji="🤖"
-          title="Bot Wins!"
-          subtitle={`The bot finished first.\n${state.hand.length} tiles remaining in your hand`}
-          onDismiss={() => {
-            clearSave();
-            router.back();
-          }}
-        />
-      )}
-
-      {/* Online opponent wins */}
-      {state.isComplete && !state.isWin && isOnline && (
-        <GameResultModal
-          emoji="😞"
-          title="Opponent Wins!"
-          subtitle={`Your opponent finished first.\n${state.hand.length} tiles remaining in your hand`}
-          onDismiss={() => {
-            router.back();
-          }}
-        />
-      )}
-
-      {/* Game Over (timer expired) — solo only */}
-      {state.isComplete && !state.isWin && !isBotMode && !isOnline && (
-        <GameResultModal
-          emoji="⏰"
-          title="Time's Up!"
-          subtitle={`${state.hand.length} tiles remaining`}
-          onDismiss={() => {
-            clearSave();
-            router.back();
-          }}
-        />
-      )}
+      {state.isComplete ? <GameResultModal
+        emoji={state.isWin ? '🎉' : '🏁'}
+        title={activeGame.resultReason === 'abandoned' ? 'Match abandoned' : state.isWin ? 'You won!' : 'Game complete'}
+        subtitle={`${state.isWin ? 'Finished' : 'Keep practicing'} · ${formatTime(state.elapsedMs)}\n${Object.keys(state.board).length} tiles placed${activeGame.resultReason === 'abandoned' ? '\nBoth players disconnected · no rating change' : isOnline ? `\nRanked human match · ${activeGame.resultReason ?? 'completed'}` : isBotMode ? '\nAI practice · no rating change' : ''}`}
+        eloDelta={activeGame.eloDelta}
+        onDismiss={() => { clearSave?.(); back(); }}
+      /> : null}
+      {dialog}
     </GestureHandlerRootView>
   );
 }

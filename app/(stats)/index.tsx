@@ -1,4 +1,5 @@
-import { ScrollView, View, Text, PlatformColor } from "react-native";
+import { ScrollView, View, Text } from "react-native";
+import { PlatformColor } from "@/utils/platform-color";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { Image } from "expo-image";
 import { useStorage } from "@/hooks/use-storage";

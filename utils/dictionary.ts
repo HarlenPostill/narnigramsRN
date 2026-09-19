@@ -1,29 +1,30 @@
 import { Asset } from "expo-asset";
-import { File } from "expo-file-system/next";
-
+import { readAsStringAsync } from "expo-file-system/legacy";
+import { Platform } from "react-native";
 let dictionary: Set<string> | null = null;
-
+let pending: Promise<Set<string>> | null = null;
 export async function loadDictionary(): Promise<Set<string>> {
   if (dictionary) return dictionary;
-
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const [asset] = await Asset.loadAsync(require("../assets/words.txt"));
-  const uri = asset.localUri;
-  if (!uri) throw new Error("Failed to load dictionary asset");
-
-  const file = new File(uri);
-  const text = await file.text();
-  dictionary = new Set(
-    text
-      .split("\n")
-      .map((w) => w.trim().toUpperCase())
-      .filter((w) => w.length > 0),
-  );
-
-  return dictionary;
+  if (pending) return pending;
+  pending = (async () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const [asset] = await Asset.loadAsync(require("../assets/words.txt"));
+    let text: string;
+    if (Platform.OS === "web") {
+      const response = await fetch(asset.uri);
+      if (!response.ok) throw new Error("Word list request failed");
+      text = await response.text();
+    } else {
+      if (!asset.localUri) throw new Error("Word list asset unavailable");
+      // SDK 54 File.text() rejects the read-only iOS application-bundle URI
+      // in Release. The supported legacy reader handles bundled assets correctly.
+      text = await readAsStringAsync(asset.localUri);
+    }
+    const words = new Set(text.split(/\r?\n/).map((word) => word.trim().toUpperCase()).filter((word) => /^[A-Z]{2,}$/.test(word)));
+    if (words.size < 1000) throw new Error("Word list is incomplete");
+    dictionary = words;
+    return words;
+  })();
+  try { return await pending; } finally { pending = null; }
 }
-
-export function isValidWord(word: string): boolean {
-  if (!dictionary) return true; // fail-open if not loaded yet
-  return dictionary.has(word.toUpperCase());
-}
+export function isValidWord(word: string): boolean { return dictionary?.has(word.toUpperCase()) ?? false; }

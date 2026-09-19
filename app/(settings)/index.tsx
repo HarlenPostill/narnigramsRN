@@ -1,22 +1,18 @@
+import { PrivacySettings } from "@/components/settings/privacy-settings";
 import { SettingsSection } from "@/components/settings/settings-section";
 import { useStorage } from "@/hooks/use-storage";
 import type {
   Difficulty,
-  GameMode,
   GameSettings,
   HandMode,
-  HandSize,
-  PoolSize,
   TimerMode,
 } from "@/types/game";
 import { DEFAULT_SETTINGS } from "@/types/game";
 import SegmentedControl from "@react-native-segmented-control/segmented-control";
-import { PlatformColor, ScrollView, Switch, Text, View } from "react-native";
+import { ScrollView, Switch, Text, View } from "react-native";
+import { PlatformColor } from "@/utils/platform-color";
 
 const HAND_MODE: HandMode[] = ["left", "right"];
-const POOL_SIZES: PoolSize[] = [50, 72, 100];
-const GAME_MODE: GameMode[] = ["solo", "bot"];
-const HAND_SIZES: HandSize[] = [11, 15, 21];
 const DIFFICULTIES: Difficulty[] = ["easy", "standard", "hard"];
 const TIMER_MODES: { label: string; value: TimerMode }[] = [
   { label: "None", value: "none" },
@@ -67,46 +63,8 @@ export default function SettingsScreen() {
     >
       <SettingsSection
         title="Game Settings"
-        description="Edit settings for your next game. This will not affect any games currently in progress."
+        description="Choose Solo length or Practice difficulty on Play. These preferences apply to your next offline game. Ranked uses a standard letter mix and no timer."
       >
-        <SettingRow label="Next Game Mode">
-          <SegmentedControl
-            values={GAME_MODE.map(
-              (d) => d.charAt(0).toUpperCase() + d.slice(1),
-            )}
-            selectedIndex={GAME_MODE.indexOf(settings.gameMode)}
-            onChange={({ nativeEvent }) =>
-              update({
-                gameMode: GAME_MODE[nativeEvent.selectedSegmentIndex],
-              })
-            }
-          />
-        </SettingRow>
-
-        <SettingRow label="Tile Pool Size (Game Length)">
-          <SegmentedControl
-            values={POOL_SIZES.map(String)}
-            selectedIndex={POOL_SIZES.indexOf(settings.poolSize)}
-            onChange={({ nativeEvent }) =>
-              update({
-                poolSize: POOL_SIZES[nativeEvent.selectedSegmentIndex],
-              })
-            }
-          />
-        </SettingRow>
-
-        <SettingRow label="Starting Tile Size">
-          <SegmentedControl
-            values={HAND_SIZES.map(String)}
-            selectedIndex={HAND_SIZES.indexOf(settings.handSize)}
-            onChange={({ nativeEvent }) =>
-              update({
-                handSize: HAND_SIZES[nativeEvent.selectedSegmentIndex],
-              })
-            }
-          />
-        </SettingRow>
-
         <SettingRow label="Letter Distribution Difficulty">
           <SegmentedControl
             values={DIFFICULTIES.map(
@@ -124,7 +82,7 @@ export default function SettingsScreen() {
 
       <SettingsSection
         title="Timer settings"
-        description="Timer settings will affect any ongoing game and future games."
+        description="Choose the timer for your next Solo or Practice game."
       >
         <SettingRow label="Timer Mode">
           <SegmentedControl
@@ -164,7 +122,7 @@ export default function SettingsScreen() {
 
       <SettingsSection
         title="Accessibility settings"
-        description="Accessibility settings will affect any ongoing game and future games."
+        description="These preferences apply to your next offline game."
       >
         <SettingRow label="Hand Mode">
           <SegmentedControl
@@ -180,6 +138,7 @@ export default function SettingsScreen() {
           />
         </SettingRow>
       </SettingsSection>
+      <PrivacySettings />
     </ScrollView>
   );
 }

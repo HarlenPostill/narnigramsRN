@@ -76,6 +76,7 @@ export function GameResultModal({
           </Text>
         )}
         <Pressable
+          accessibilityRole="button"
           onPress={onDismiss}
           style={{
             backgroundColor: "#007AFF",

@@ -1,14 +1,9 @@
 import { useColors } from "@/hooks/use-colors";
 import { SymbolView } from "expo-symbols";
-import { PlatformColor, Text, View } from "react-native";
+import { Text, View } from "react-native";
+import { PlatformColor } from "@/utils/platform-color";
 
-const RANK_TIERS = [
-  { name: "Bronze", color: "#D2A36A", rating: 300 },
-  { name: "Silver", color: "#A6A6A6", rating: 600 },
-  { name: "Gold", color: "#FFC800", rating: 900 },
-  { name: "Platinum", color: "#7090B5", rating: 1200 },
-  { name: "Diamond", color: "#007CFF", rating: 1500 },
-] as const;
+import { RANKS } from "@/utils/elo";
 
 export function RankLadder() {
   const colors = useColors();
@@ -54,10 +49,12 @@ export function RankLadder() {
           flexDirection: "row",
           justifyContent: "space-between",
           flexGrow: 1,
+          flexWrap: "wrap",
+          gap: 12,
         }}
       >
-        {RANK_TIERS.map((tier) => (
-          <View key={tier.name} style={{ gap: 6, alignItems: "center" }}>
+        {RANKS.map((tier) => (
+          <View key={tier.label} style={{ gap: 6, alignItems: "center" }}>
             <SymbolView
               name={"trophy.fill"}
               size={16}
@@ -70,7 +67,7 @@ export function RankLadder() {
                 color: tier.color,
               }}
             >
-              {tier.name}
+              {tier.label}
             </Text>
             <Text
               style={{
@@ -79,7 +76,7 @@ export function RankLadder() {
                 color: tier.color,
               }}
             >
-              {tier.rating}
+              {tier.min}
             </Text>
           </View>
         ))}

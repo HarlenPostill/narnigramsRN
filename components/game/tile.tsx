@@ -17,7 +17,7 @@ export function Tile({ tile, size = CELL_SIZE, isInvalid }: TileProps) {
 
   return (
     <View
-      accessibilityLabel={`Letter ${tile.letter}, ${tile.points} points`}
+      accessibilityLabel={`Letter ${tile.letter}, ${tile.points} points${isInvalid ? ", invalid word" : ""}`}
       style={{
         width: size,
         height: size,
@@ -41,6 +41,7 @@ export function Tile({ tile, size = CELL_SIZE, isInvalid }: TileProps) {
       >
         {tile.letter}
       </Text>
+      {isInvalid ? <Text style={{ position: "absolute", top: 1, right: 3, fontSize: 12, fontWeight: "900", color: "#8B0000" }}>!</Text> : null}
       <Text
         style={{
           fontSize: pointsSize,

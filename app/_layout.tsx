@@ -1,6 +1,6 @@
+export { AppErrorBoundary as ErrorBoundary } from "@/components/error-boundary";
 import { Theme } from "@/components/theme";
 import { AuthProvider } from "@/hooks/use-auth";
-import { UsernameModal } from "@/components/auth/username-modal";
 import { Icon, Label, NativeTabs } from "expo-router/unstable-native-tabs";
 import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
@@ -23,7 +23,6 @@ export default function RootLayout() {
             <Label>Settings</Label>
           </NativeTabs.Trigger>
         </NativeTabs>
-        <UsernameModal />
         <StatusBar style="auto" />
       </AuthProvider>
     </Theme>

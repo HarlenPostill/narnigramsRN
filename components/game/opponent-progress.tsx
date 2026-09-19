@@ -1,9 +1,8 @@
 import { useColors } from "@/hooks/use-colors";
-import type { Player } from "@/types/game";
 import { Text, View } from "react-native";
 
 interface OpponentProgressProps {
-  opponent: Player;
+  opponent: { displayName: string; rating: number };
   connected: boolean;
 }
 
@@ -40,13 +39,13 @@ export function OpponentProgress({ opponent, connected }: OpponentProgressProps)
           }}
           numberOfLines={1}
         >
-          {opponent.username}
+          {opponent.displayName}
         </Text>
       </View>
 
       {/* ELO */}
       <Text style={{ fontSize: 11, color: colors.textSecondary }}>
-        ELO {opponent.elo}
+        ELO {opponent.rating}
       </Text>
 
       {/* Connection warning */}

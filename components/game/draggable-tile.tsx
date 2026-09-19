@@ -44,37 +44,37 @@ export function DraggableTile({
 
   const gesture = Gesture.Pan()
     .onStart(() => {
-      zIndex.value = 100;
-      scale.value = withTiming(1.1, { duration: 120 });
+      zIndex.set(100);
+      scale.set(withTiming(1.1, { duration: 120 }));
       runOnJS(hapticFeedback)();
     })
     .onUpdate((e) => {
-      translateX.value = e.translationX;
-      translateY.value = e.translationY;
+      translateX.set(e.translationX);
+      translateY.set(e.translationY);
     })
     .onEnd((e) => {
-      scale.value = withTiming(1, { duration: 120 });
+      scale.set(withTiming(1, { duration: 120 }));
       // Hide tile immediately so the snap-back is invisible.
       // If the drop is valid the component unmounts before the restore fires.
       // If invalid, the tile fades back in at its original position.
-      opacity.value = withSequence(
+      opacity.set(withSequence(
         withTiming(0, { duration: 0 }),
         withDelay(150, withTiming(1, { duration: 80 })),
-      );
-      translateX.value = 0;
-      translateY.value = 0;
-      zIndex.value = 0;
+      ));
+      translateX.set(0);
+      translateY.set(0);
+      zIndex.set(0);
       runOnJS(handleDragEnd)(e.absoluteX, e.absoluteY);
     });
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [
-      { translateX: translateX.value },
-      { translateY: translateY.value },
-      { scale: scale.value },
+      { translateX: translateX.get() },
+      { translateY: translateY.get() },
+      { scale: scale.get() },
     ],
-    zIndex: zIndex.value,
-    opacity: opacity.value,
+    zIndex: zIndex.get(),
+    opacity: opacity.get(),
   }));
 
   return (

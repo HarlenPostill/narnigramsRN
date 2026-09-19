@@ -48,9 +48,13 @@
       [
         "expo-asset",
         {
-          "assets": ["./assets/words.txt"]
+          "assets": [
+            "./assets/words.txt"
+          ]
         }
-      ]
+      ],
+      "expo-font",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,

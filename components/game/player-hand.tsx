@@ -1,7 +1,7 @@
 import type { Tile } from "@/types/game";
 import { useColors } from "@/hooks/use-colors";
 import { View } from "react-native";
-import Animated, { LinearTransition } from "react-native-reanimated";
+import Animated from "react-native-reanimated";
 import { DraggableTile } from "./draggable-tile";
 
 interface PlayerHandProps {
@@ -33,7 +33,6 @@ export function PlayerHand({ tiles, onDragEnd }: PlayerHandProps) {
       }}
     >
       <Animated.View
-        layout={LinearTransition}
         style={{
           flexDirection: "row",
           flexWrap: "wrap",
@@ -43,7 +42,7 @@ export function PlayerHand({ tiles, onDragEnd }: PlayerHandProps) {
         }}
       >
         {tiles.map((tile) => (
-          <Animated.View key={tile.id} layout={LinearTransition}>
+          <Animated.View key={tile.id}>
             <DraggableTile
               tile={tile}
               onDragEnd={onDragEnd}

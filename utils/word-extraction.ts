@@ -1,5 +1,5 @@
-import type { Tile } from "@/types/game";
-import { parseKey, posKey } from "@/types/game";
+import type { Tile } from "../types/game";
+import { parseKey, posKey } from "../types/game";
 
 export interface ExtractedWord {
   word: string;
@@ -8,6 +8,11 @@ export interface ExtractedWord {
 
 export function extractWords(board: Record<string, Tile>): ExtractedWord[] {
   const words: ExtractedWord[] = [];
+  // Guard coordinate stepping before iterating untrusted/restored board keys.
+  if (Object.keys(board).some((key) => {
+    const { row, col } = parseKey(key);
+    return !Number.isSafeInteger(row) || !Number.isSafeInteger(col) || key !== posKey(row, col);
+  })) return words;
 
   for (const key of Object.keys(board)) {
     const { row, col } = parseKey(key);
