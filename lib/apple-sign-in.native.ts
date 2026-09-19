@@ -1,3 +1,4 @@
+import { authErrorCode } from "../utils/auth-errors";
 import * as AppleAuthentication from "expo-apple-authentication";
 import * as Crypto from "expo-crypto";
 import {
@@ -7,7 +8,7 @@ import {
   signInWithCredential,
   type Auth,
 } from "firebase/auth";
-export async function signInApple(auth: Auth) {
+async function exchangeAppleCredential(auth: Auth) {
   if (!(await AppleAuthentication.isAvailableAsync()))
     throw new Error(
       "Apple sign-in is unavailable on this device. Use email and password.",
@@ -60,4 +61,24 @@ export async function revokeApple(
     }),
   );
   await revokeCode(response.authorizationCode);
+}
+
+export async function signInApple(auth: Auth) {
+  try {
+    return await exchangeAppleCredential(auth);
+  } catch (error) {
+    const code = authErrorCode(error);
+    if (__DEV__ && code !== "ERR_REQUEST_CANCELED") {
+      console.warn("[auth/apple] Credential exchange failed", {
+        code,
+        projectId: auth.app.options.projectId,
+        hint:
+          code === "auth/invalid-credential"
+            ? "Verify the native iOS bundle ID is registered under Firebase Project settings > Your apps, and Apple is enabled in this project."
+            : undefined,
+        stage: code.startsWith("auth/") ? "firebase" : "apple",
+      });
+    }
+    throw error;
+  }
 }

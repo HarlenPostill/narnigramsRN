@@ -14,7 +14,8 @@
         "dark": "./assets/images/narnigrams-icon-dark.png"
       },
       "bundleIdentifier": "com.hrln-interaction.narnigrams",
-      "usesAppleSignIn": true
+      "usesAppleSignIn": true,
+      "appleTeamId": "Z43R7TX7Z9"
     },
     "android": {
       "adaptiveIcon": {

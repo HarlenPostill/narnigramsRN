@@ -1,3 +1,8 @@
+import {
+  authErrorCode,
+  authErrorMessage,
+  type SignInMethod,
+} from "@/utils/auth-errors";
 import * as AppleAuthentication from "expo-apple-authentication";
 import { useEffect, useState } from "react";
 import {
@@ -26,31 +31,25 @@ export function AccountGate({ onCancel }: { onCancel: () => void }) {
       .then(setAppleAvailable)
       .catch(() => {});
   }, []);
-  const run = async (action: () => Promise<void>) => {
+  const run = async (
+    action: () => Promise<void>,
+    method: SignInMethod = "email",
+  ) => {
     if (busy) return;
     setBusy(true);
     setMessage(null);
     try {
       await action();
     } catch (e) {
-      const code = (e as { code?: string }).code;
-      if (
-        code !== "ERR_REQUEST_CANCELED" &&
-        code !== "auth/popup-closed-by-user"
-      )
-        setMessage(
-          code === "auth/invalid-credential"
-            ? "Email or password is incorrect."
-            : code === "auth/email-already-in-use"
-              ? "An account already uses this email. Sign in or reset your password."
-              : code === "auth/credential-already-in-use"
-                ? "This Apple account already exists. Sign out in Settings, then sign in with Apple."
-                : code === "auth/weak-password"
-                  ? "Choose a password with at least 6 characters."
-                  : e instanceof Error
-                    ? e.message
-                    : "Unable to sign in. Please retry.",
-        );
+      const message = authErrorMessage(e, method);
+      if (message) {
+        setMessage(message);
+        if (__DEV__)
+          console.warn("[auth] Sign-in failed", {
+            method,
+            code: authErrorCode(e),
+          });
+      }
     } finally {
       setBusy(false);
     }
@@ -142,13 +141,13 @@ export function AccountGate({ onCancel }: { onCancel: () => void }) {
             cornerRadius={12}
             style={{ height: 50, opacity: busy ? 0.5 : 1 }}
             onPress={() => {
-              void run(() => getRepositories().auth.signInApple());
+              void run(() => getRepositories().auth.signInApple(), "apple");
             }}
           />
         ) : null}
         {Platform.OS === "web"
           ? button("Sign in with Apple", () => {
-              void run(() => getRepositories().auth.signInApple());
+              void run(() => getRepositories().auth.signInApple(), "apple");
             })
           : null}
         {button(

@@ -47,6 +47,8 @@ Before shutting down an existing Supabase project, determine whether real users/
 
 ## Apple and email account rollout
 
+Register the native iOS app under Firebase Project settings → Your apps with bundle ID `com.hrln-interaction.narnigrams`, even though this Expo app uses the Firebase JavaScript SDK and its web client configuration. The Apple token from the native sign-in sheet targets that bundle ID; a web Services ID alone does not configure the native app. Keep the existing JS SDK environment configuration. This integration does not require switching to the native Firebase SDK or adding its plist.
+
 Enable Email/Password and Apple in Firebase Authentication. Disable anonymous account creation after deploying these rules/functions. Existing anonymous users cannot queue until they authenticate; creating a new email or Apple account links their existing UID and preserves its server-owned rating. Signing into an already-existing account restores that account instead; ranked ratings are never merged from client data.
 
 For Apple, enable Sign in with Apple on the app identifier `com.hrln-interaction.narnigrams` in the Apple developer account. Configure Firebase’s Apple provider with your Team ID, Key ID, private key and web Services ID where required. Register Firebase’s OAuth handler return URL and authorized web domains. Keep the Apple private key in provider configuration, never in Expo public variables. Configure Apple’s private email relay for any Firebase emails you send. See [Firebase Apple setup](https://firebase.google.com/docs/auth/web/apple) and [Expo AppleAuthentication](https://docs.expo.dev/versions/v54.0.0/sdk/apple-authentication/).
