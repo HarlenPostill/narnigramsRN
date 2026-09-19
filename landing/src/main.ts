@@ -19,7 +19,7 @@ const home = `
     <div class="hero-copy"><p class="eyebrow">YOUR NEXT WORD IS WAITING</p>
       <h1>A little wordplay.<br>A whole lot of<br><span>possibility.</span></h1>
       <p class="intro">Turn a handful of letters into your next little obsession. Make words, connect them, and see where your mind takes you.</p>
-      ${download}<p class="quiet">No ads. Just you and the letters.</p>
+      ${download}
     </div>
     <div class="board-wrap"><div class="board" role="img" aria-label="An illustrated tile board with the connected words PLAY, EARS, YES and EAR">
       <span class="board-note">MAKE ROOM FOR A LITTLE PLAY</span>

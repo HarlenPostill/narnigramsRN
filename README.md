@@ -6,7 +6,7 @@ Narnigrams is an iPhone-first word-tile game built with Expo, React Native and T
 - **Practice:** Easy, Medium or Hard deterministic AI using real tiles from the shared pool.
 - **Ranked Online:** Firebase-backed human matchmaking and server-settled ELO. After 10 seconds without a human match, the server offers a clearly identified, unranked AI fallback.
 
-Solo and Practice work without sign-in. Ranked requires Apple or email/password sign-in and uses generated names. Ratings and stats belong to the account. No payments, ads, analytics, tracking or chat are included.
+Solo and Practice work without sign-in. Ranked requires Apple or email/password sign-in and supports editable, non-unique display names in Account settings. Ratings and stats belong to the account. No payments, ads, analytics, tracking or chat are included.
 
 ## Development
 

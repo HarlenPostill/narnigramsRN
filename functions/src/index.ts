@@ -18,7 +18,11 @@ const dictionary = new Set(
     .filter(Boolean),
 );
 const service = new GameService(getFirestore(), dictionary);
-const options = { region: "australia-southeast1", maxInstances: 10 };
+const options = {
+  region: "australia-southeast1",
+  maxInstances: 10,
+  invoker: "public" as const,
+};
 function uid(
   auth:
     | { uid: string; token: { firebase?: { sign_in_provider?: string } } }
@@ -55,6 +59,11 @@ export const ensurePlayer = onCall(options, (request) =>
     }
     return service.ensurePlayer(playerId);
   }),
+);
+export const updateProfile = onCall(options, (request) =>
+  safe(() =>
+    service.updateProfile(uid(request.auth), request.data?.displayName),
+  ),
 );
 export const matchmaking = onCall(options, (request) =>
   safe(() =>

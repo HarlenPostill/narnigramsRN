@@ -1,3 +1,4 @@
+import { onlineErrorMessage } from "@/utils/online-errors";
 import { AccountGate } from "@/components/auth/account-gate";
 import { isCurrentSearchSnapshot } from "@/utils/online-reconciliation";
 import { useAuth } from "@/hooks/use-auth";
@@ -9,6 +10,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -20,13 +22,14 @@ export default function QueueScreen() {
     if (canGoBack()) goBack();
     else replace("/");
   }, [goBack, canGoBack, replace]);
-  const { ensurePlayer, hasAccount, isLoading } = useAuth();
+  const { ensurePlayer, hasAccount, isLoading, player } = useAuth();
   const colors = useColors();
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
   const [elapsed, setElapsed] = useState(0);
   const [cancelling, setCancelling] = useState(false);
   const resolved = useRef(false);
+  const leaving = useRef(false);
   const searchId = useRef(commandId()).current;
   useEffect(() => {
     if (!hasAccount || isLoading) return;
@@ -39,7 +42,7 @@ export default function QueueScreen() {
     setError(null);
     setElapsed(0);
     const accept = (ticket: QueueTicket | null) => {
-      if (!ticket || disposed || resolved.current) return;
+      if (!ticket || disposed || resolved.current || leaving.current) return;
       if (ticket.status === "matched" && ticket.matchId) {
         resolved.current = true;
         replace({ pathname: "/game", params: { matchId: ticket.matchId } });
@@ -62,45 +65,38 @@ export default function QueueScreen() {
         back();
       }
     };
+    const fail = (e: unknown) => {
+      if (disposed || leaving.current || resolved.current) return;
+      if (timer) clearInterval(timer);
+      unsubscribe?.();
+      setError(onlineErrorMessage(e));
+    };
     void (async () => {
       try {
         await ensurePlayer();
-        if (disposed) return;
+        if (disposed || leaving.current) return;
         const repository = getRepositories().matchmaking;
         const ticket = await repository.enqueue(searchId);
-        if (disposed) return;
+        if (disposed || leaving.current) return;
         accept(ticket);
         if (resolved.current) return;
-        unsubscribe = repository.watch(
-          (snapshot) => {
-            if (isCurrentSearchSnapshot(snapshot, searchId)) accept(snapshot);
-          },
-          (e) => {
-            if (!disposed) setError(e.message);
-          },
-        );
+        unsubscribe = repository.watch((snapshot) => {
+          if (isCurrentSearchSnapshot(snapshot, searchId)) accept(snapshot);
+        }, fail);
         timer = setInterval(() => {
-          if (disposed || resolved.current || busy) return;
+          if (disposed || resolved.current || leaving.current || busy) return;
           setElapsed(Math.floor((Date.now() - start) / 1000));
           busy = true;
           void repository
             .poll(searchId)
             .then(accept)
-            .catch((e) => {
-              if (!disposed)
-                setError(
-                  e instanceof Error
-                    ? e.message
-                    : "Connection lost. Retry to reconnect.",
-                );
-            })
+            .catch(fail)
             .finally(() => {
               busy = false;
             });
         }, 1000);
       } catch (e) {
-        if (!disposed)
-          setError(e instanceof Error ? e.message : "Unable to search");
+        fail(e);
       }
     })();
     return () => {
@@ -124,20 +120,27 @@ export default function QueueScreen() {
     [searchId, hasAccount],
   );
   const cancel = async () => {
+    if (leaving.current) return;
+    leaving.current = true;
     setCancelling(true);
+    // Stop accepting queue events immediately. A failed connection must never
+    // trap the player here; the server lease expires if cancellation cannot arrive.
+    let timeout: ReturnType<typeof setTimeout> | undefined;
     try {
-      const ticket = await getRepositories().matchmaking.cancel(searchId);
-      resolved.current = true;
-      // A human claim that committed first wins the cancellation race.
-      if (ticket.status === "matched" && ticket.matchId)
+      const ticket = await Promise.race([
+        getRepositories().matchmaking.cancel(searchId),
+        new Promise<null>((resolve) => {
+          timeout = setTimeout(() => resolve(null), 2000);
+        }),
+      ]);
+      if (ticket?.status === "matched" && ticket.matchId) {
+        resolved.current = true;
         replace({ pathname: "/game", params: { matchId: ticket.matchId } });
-      else back();
-    } catch (e) {
-      setError(
-        e instanceof Error ? e.message : "Could not cancel. Please retry.",
-      );
+      } else back();
+    } catch {
+      back();
     } finally {
-      setCancelling(false);
+      if (timeout) clearTimeout(timeout);
     }
   };
   if (isLoading)
@@ -148,24 +151,44 @@ export default function QueueScreen() {
     );
   if (!hasAccount) return <AccountGate onCancel={back} />;
   return (
-    <View style={[styles.screen, { backgroundColor: colors.screenBg }]}>
+    <ScrollView
+      contentInsetAdjustmentBehavior="automatic"
+      contentContainerStyle={styles.screen}
+      style={{ flex: 1, backgroundColor: colors.screenBg }}
+    >
       {!error && <ActivityIndicator size="large" />}
       <Text
         accessibilityRole="header"
         style={[styles.title, { color: colors.textPrimary }]}
       >
-        {error ? "Unable to connect" : "Finding a human opponent"}
+        {error
+          ? attempt > 0
+            ? "Still unable to connect"
+            : "Unable to connect"
+          : attempt > 0
+            ? "Reconnecting…"
+            : "Finding a human opponent"}
       </Text>
       <Text
         accessibilityLiveRegion="polite"
         style={{ color: colors.textSecondary, textAlign: "center" }}
       >
-        {error ?? `${elapsed}s · Searching by rating`}
+        {error ??
+          `${elapsed}s · ${player?.displayName ?? "Your player"} · Searching by rating`}
       </Text>
-      <Text style={{ color: colors.textSecondary, textAlign: "center" }}>
-        After 10 seconds, you’ll play an AI practice match if no human is
-        available. AI matches do not affect your rating.
-      </Text>
+      {!error ? (
+        <Text style={{ color: colors.textSecondary, textAlign: "center" }}>
+          After 10 seconds of searching, you’ll play an AI practice match if no
+          human is available. AI matches do not affect your rating.
+        </Text>
+      ) : attempt > 0 ? (
+        <Text
+          accessibilityLiveRegion="polite"
+          style={{ color: colors.textSecondary }}
+        >
+          Retry {attempt} failed. You can try again or leave.
+        </Text>
+      ) : null}
       <Text style={{ color: colors.textSecondary, textAlign: "center" }}>
         Your rating and ranked results are saved to your account. Manage your
         account in Settings.
@@ -174,11 +197,22 @@ export default function QueueScreen() {
         <Pressable
           accessibilityRole="button"
           style={styles.button}
+          disabled={cancelling}
           onPress={() => setAttempt((x) => x + 1)}
         >
           <Text style={styles.buttonText}>Retry</Text>
         </Pressable>
       )}
+      {error ? (
+        <Pressable
+          accessibilityRole="button"
+          disabled={cancelling}
+          style={styles.button}
+          onPress={() => replace("/(settings)")}
+        >
+          <Text style={styles.buttonText}>Account settings</Text>
+        </Pressable>
+      ) : null}
       <Pressable
         accessibilityRole="button"
         disabled={cancelling}
@@ -188,15 +222,15 @@ export default function QueueScreen() {
         }}
       >
         <Text style={styles.buttonText}>
-          {cancelling ? "Cancelling…" : "Cancel"}
+          {cancelling ? "Leaving…" : error ? "Back to Play" : "Cancel search"}
         </Text>
       </Pressable>
-    </View>
+    </ScrollView>
   );
 }
 const styles = StyleSheet.create({
   screen: {
-    flex: 1,
+    flexGrow: 1,
     justifyContent: "center",
     alignItems: "center",
     padding: 28,

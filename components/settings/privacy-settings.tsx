@@ -3,7 +3,6 @@ import { useAuth } from "@/hooks/use-auth";
 import { useColors } from "@/hooks/use-colors";
 import securityNotice from "@/assets/security-notice.json";
 import wordlistNotice from "@/assets/wordlist-notice.json";
-import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
   Linking,
@@ -17,9 +16,8 @@ import {
 import { SettingsSection } from "./settings-section";
 
 export function PrivacySettings() {
-  const { hasAccount, deleteAccount, signOut } = useAuth();
+  const { hasAccount, deleteAccount } = useAuth();
   const colors = useColors();
-  const { push } = useRouter();
   const { confirm, dialog } = useConfirm();
   const [notice, setNotice] = useState<"privacy" | "dictionary" | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -74,9 +72,6 @@ export function PrivacySettings() {
       title="Privacy and support"
       description="Solo and Practice work without an account. Ranked requires an Apple or email account. Your rating and stats follow your account."
     >
-      {!hasAccount
-        ? button("Sign in or create an account", () => push("/account"))
-        : null}
       {button("Privacy and data use", () => setNotice("privacy"))}
       {privacyUrl
         ? button("Published privacy policy", () => {
@@ -95,11 +90,6 @@ export function PrivacySettings() {
       {button("Dictionary and third-party notices", () =>
         setNotice("dictionary"),
       )}
-      {hasAccount
-        ? button("Sign out", () => {
-            void signOut().catch((e) => setError(e.message));
-          })
-        : null}
       {hasAccount ? (
         <Pressable
           accessibilityRole="button"
@@ -147,7 +137,7 @@ export function PrivacySettings() {
           >
             {notice === "dictionary"
               ? `${wordlistNotice.name}\n\n${wordlistNotice.license}\n\nSecurity dependency notice\n${securityNotice.license}`
-              : "Solo and Practice save games, settings and results on this device. Ranked requires signing in with Apple or email and password. Signed-in Solo and Practice results sync to your account; guest play stays on this device. Your first sign-in imports saved game history. We store a generated display name, rating, match results and temporary game state to provide matchmaking, reconnect and fair results. Other players can see your generated name and rating during a match, but cannot see your private hand or board.\n\nWe do not include advertising, tracking, chat or analytics. Firebase processes online service data. You can delete your account and online data here. AI fallback matches are clearly identified and never affect public rating.\n\nAccount deletion is permanent. Email accounts support password reset; Apple accounts use Sign in with Apple."}
+              : "Solo and Practice save games, settings and results on this device. Ranked requires signing in with Apple or email and password. Signed-in Solo and Practice results sync to your account; guest play stays on this device. Your first sign-in imports saved game history. We store a display name, rating, match results and temporary game state to provide matchmaking, reconnect and fair results. Other players can see your display name and rating during a match, but cannot see your private hand or board.\n\nWe do not include advertising, tracking, chat or analytics. Firebase processes online service data. You can delete your account and online data here. AI fallback matches are clearly identified and never affect public rating.\n\nAccount deletion is permanent. Email accounts support password reset; Apple accounts use Sign in with Apple."}
           </Text>
         </ScrollView>
       </Modal>

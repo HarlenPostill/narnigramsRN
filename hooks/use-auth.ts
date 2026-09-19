@@ -165,10 +165,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     }
   }, []);
-  const ensurePlayer = useCallback(
-    () => getRepositories().auth.ensurePlayer(),
-    [],
-  );
+  const ensurePlayer = useCallback(async () => {
+    const repositories = getRepositories();
+    const profile = await repositories.auth.ensurePlayer();
+    if (repositories.auth.currentUid() === profile.uid) {
+      setPlayer(profile);
+      setError(null);
+      storage.set(`player-cache-${profile.uid}`, profile);
+    }
+    return profile;
+  }, []);
   const refreshPlayer = useCallback(async () => {
     if (!hasFirebaseConfiguration()) return;
     try {

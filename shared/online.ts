@@ -86,6 +86,7 @@ export interface GameRepositories {
     signOut(): Promise<void>;
     ensurePlayer(): Promise<PlayerProfile>;
     currentUid(): string | null;
+    accountInfo(): { email: string | null; providers: string[] };
     watchAuth(next: (uid: string | null) => void): Unsubscribe;
     deleteAccount(): Promise<void>;
   };
@@ -101,6 +102,7 @@ export interface GameRepositories {
     ): Unsubscribe;
   };
   profiles: {
+    update(displayName: string): Promise<PlayerProfile>;
     get(): Promise<PlayerProfile | null>;
     watch(
       next: (profile: PlayerProfile | null) => void,

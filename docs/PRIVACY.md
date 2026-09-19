@@ -30,7 +30,7 @@ Cloud retention is specified in [FIREBASE.md](FIREBASE.md). The operator must co
 
 ## Policy publication checklist
 
-Before publishing, supply the operator's legal/contact identity, effective date, Firebase processing locations and service providers, actual retention periods, user rights/request process, support response contact, intended audience and applicable international transfer terms. Explain that human ranked results affect rating and AI fallback results do not, and that other players see generated names and limited match progress, not private boards.
+Before publishing, supply the operator's legal/contact identity, effective date, Firebase processing locations and service providers, actual retention periods, user rights/request process, support response contact, intended audience and applicable international transfer terms. Explain that human ranked results affect rating and AI fallback results do not, and that other players see player display names and limited match progress, not private boards.
 
 There are no editable usernames, messages, chat, profile photos or public boards in the intended release. If any are added, revisit moderation, report/block tools, data inventory and age rating. Do not describe the app as a Kids Category product without the separate child-privacy and parental-gate review that entails.
 

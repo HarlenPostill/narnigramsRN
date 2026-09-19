@@ -56,6 +56,48 @@ test(
   { skip: !enabled },
   async (t) => {
     await t.test(
+      "display names are non-unique, validated and preserve ranked data",
+      async () => {
+        await assert.rejects(() =>
+          service!.updateProfile("missing-player", "New name"),
+        );
+        assert.equal(
+          (await db!.doc("players/missing-player").get()).exists,
+          false,
+        );
+        const original = await service!.ensurePlayer("name-alice");
+        await service!.ensurePlayer("name-bob");
+        const updated = await service!.updateProfile(
+          "name-alice",
+          "  Friendly   Koala  ",
+        );
+        assert.deepEqual(updated, {
+          ...original,
+          displayName: "Friendly Koala",
+        });
+        const other = await service!.updateProfile(
+          "name-bob",
+          "Friendly Koala",
+        );
+        assert.equal(other.displayName, updated.displayName);
+        for (const value of [
+          "",
+          " ",
+          "x".repeat(31),
+          "bad\nname",
+          "bad\u202ename",
+          { rating: 9999 },
+        ])
+          await assert.rejects(() =>
+            service!.updateProfile("name-alice", value),
+          );
+        assert.equal(
+          (await db!.doc("players/name-alice").get()).get("rating"),
+          original.rating,
+        );
+      },
+    );
+    await t.test(
       "rules deny all client writes and unrelated reads; permit owner snapshots",
       async () => {
         await environment.clearFirestore();

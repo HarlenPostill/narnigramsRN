@@ -35,7 +35,7 @@ Initial rating 800, floor 0, chess expected-score curve. Provisional K=40 applie
 
 AI difficulty maps to easy below 700, medium below 1300, otherwise hard. AI is not a fake human profile. A deterministic local AI session is useful practice, but cannot mint public rating.
 
-Server-generated display names replace arbitrary usernames. Names are identifiers, not uniqueness-guaranteed personal handles; Firebase UID is the identity. There is no chat, editable profile text, public board or public word feed. This removes the former public text moderation surface instead of depending on an inadequate profanity-only username filter. Reintroducing editable public content requires moderation, reporting, blocking and an operational response process first.
+Players start with a server-generated display name and can change it in Account settings through the authenticated `updateProfile` callable. Names contain 1–30 Unicode characters after normalization, exclude control/format characters, and do not need to be unique; Firebase UID remains the account identity. Only the name can be edited, never ratings or results. New matches snapshot each name for opponents. There is no chat, public board or public word feed. Editable names introduce public text; name moderation/reporting/blocking and an operational response process remain release-readiness work.
 
 ## Remaining trust limits
 

@@ -1,3 +1,4 @@
+import { AccountSettings } from "@/components/settings/account-settings";
 import { PrivacySettings } from "@/components/settings/privacy-settings";
 import { SettingsSection } from "@/components/settings/settings-section";
 import { useStorage } from "@/hooks/use-storage";
@@ -61,6 +62,7 @@ export default function SettingsScreen() {
       contentInsetAdjustmentBehavior="automatic"
       contentContainerStyle={{ padding: 16, gap: 12 }}
     >
+      <AccountSettings />
       <SettingsSection
         title="Game Settings"
         description="Choose Solo length or Practice difficulty on Play. These preferences apply to your next offline game. Ranked uses a standard letter mix and no timer."

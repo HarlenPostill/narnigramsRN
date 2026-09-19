@@ -1,3 +1,4 @@
+import { normalizeDisplayName } from "../../shared/profile";
 import { addRecord, emptyStats, validOfflineRecord } from "../../shared/stats";
 import type { GameStats } from "../../types/game";
 import { randomUUID, createHash } from "node:crypto";
@@ -185,6 +186,22 @@ export class GameService {
       };
       tx.create(ref, profile);
       return profile;
+    });
+  }
+  async updateProfile(uid: string, value: unknown): Promise<PlayerProfile> {
+    const displayName = normalizeDisplayName(value);
+    if (!displayName)
+      throw new DomainError(
+        "invalid-argument",
+        "Use 1–30 characters without control characters.",
+      );
+    return this.db.runTransaction(async (tx) => {
+      const ref = this.db.doc(`players/${uid}`);
+      const snap = await tx.get(ref);
+      if (!snap.exists || snap.get("deleting"))
+        throw new DomainError("failed-precondition", "Account unavailable.");
+      tx.update(ref, { displayName });
+      return { ...(snap.data() as PlayerProfile), displayName };
     });
   }
   async matchmaking(

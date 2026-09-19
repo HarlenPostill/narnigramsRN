@@ -79,8 +79,15 @@ export function getRepositories(): GameRepositories {
       throw new Error("Sign in to play Ranked.");
     return auth.currentUser.uid;
   };
-  const call = async <T>(name: string, data: unknown): Promise<T> =>
-    (await httpsCallable<unknown, T>(functions, name)(data)).data;
+  const call = async <T>(name: string, data: unknown): Promise<T> => {
+    await auth.authStateReady();
+    uid();
+    await auth.currentUser!.getIdToken();
+    // Bound connection waits so the UI always offers a way to recover.
+    return (
+      await httpsCallable<unknown, T>(functions, name, { timeout: 12000 })(data)
+    ).data;
+  };
   const queue = (operation: "enqueue" | "poll" | "cancel", searchId?: string) =>
     call<QueueTicket>("matchmaking", {
       operation,
@@ -90,6 +97,11 @@ export function getRepositories(): GameRepositories {
     });
   repositories = {
     auth: {
+      accountInfo: () => ({
+        email: auth.currentUser?.email ?? null,
+        providers:
+          auth.currentUser?.providerData.map((p) => p.providerId) ?? [],
+      }),
       currentUid: () =>
         auth.currentUser && !auth.currentUser.isAnonymous
           ? auth.currentUser.uid
@@ -153,6 +165,8 @@ export function getRepositories(): GameRepositories {
         ),
     },
     profiles: {
+      update: (displayName) =>
+        call<PlayerProfile>("updateProfile", { displayName }),
       get: async () => {
         await auth.authStateReady();
         if (!auth.currentUser || auth.currentUser.isAnonymous) return null;
