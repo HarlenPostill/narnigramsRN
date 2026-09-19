@@ -30,8 +30,20 @@ yarn-error.*
 .DS_Store
 *.pem
 
-# local env files
-.env*.local
+# Environment configuration stays local; never bundle server credentials.
+.env
+.env.*
+!.env.example
+**/service-account*.json
+**/serviceAccount*.json
+
+# Firebase emulator state, local config and generated Functions output
+.firebase/
+firebase-debug.log*
+firestore-debug.log*
+ui-debug.log*
+functions/lib/
+coverage/
 
 # typescript
 *.tsbuildinfo

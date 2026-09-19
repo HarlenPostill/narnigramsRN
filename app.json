@@ -7,14 +7,15 @@
     "icon": "./assets/images/narnigrams-logo.png",
     "scheme": "narnigrams",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "ios": {
       "supportsTablet": false,
       "icon": {
         "light": "./assets/images/narnigrams-icon-light.png",
         "dark": "./assets/images/narnigrams-icon-dark.png"
       },
-      "bundleIdentifier": "com.hrln-interaction.narnigrams"
+      "bundleIdentifier": "com.hrln-interaction.narnigrams",
+      "usesAppleSignIn": true,
+      "appleTeamId": "Z43R7TX7Z9"
     },
     "android": {
       "adaptiveIcon": {
@@ -23,8 +24,8 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.hrlninteraction.narnigrams"
     },
     "web": {
       "output": "static",
@@ -44,7 +45,18 @@
           }
         }
       ],
-      "expo-sqlite"
+      "expo-sqlite",
+      [
+        "expo-asset",
+        {
+          "assets": [
+            "./assets/words.txt"
+          ]
+        }
+      ],
+      "expo-font",
+      "expo-web-browser",
+      "expo-apple-authentication"
     ],
     "experiments": {
       "typedRoutes": true,

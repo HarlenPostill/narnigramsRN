@@ -1,72 +1,45 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-
-interface UseTimerOptions {
-  countdownMinutes?: number; // 0 or undefined = count up only
-  onExpire?: () => void;
-}
-
+import { AppState } from "react-native";
+interface UseTimerOptions { countdownMinutes?: number; onExpire?: () => void }
+/** Wall-clock elapsed time catches up after backgrounding; callbacks do not restart the timer. */
 export function useTimer({ countdownMinutes, onExpire }: UseTimerOptions = {}) {
   const [elapsedMs, setElapsedMs] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const startTimeRef = useRef<number>(0);
-  const accumulatedRef = useRef<number>(0);
-
-  const start = useCallback(() => {
-    startTimeRef.current = Date.now();
-    setIsRunning(true);
+  const running = useRef(false);
+  const startTime = useRef(0);
+  const accumulated = useRef(0);
+  const expire = useRef(onExpire);
+  useEffect(() => { expire.current = onExpire; }, [onExpire]);
+  const start = useCallback((initialElapsedMs?: number) => {
+    if (running.current) return;
+    if (initialElapsedMs !== undefined) accumulated.current = Math.max(0, initialElapsedMs);
+    startTime.current = Date.now(); running.current = true;
+    setElapsedMs(accumulated.current); setIsRunning(true);
   }, []);
-
   const pause = useCallback(() => {
-    if (isRunning) {
-      accumulatedRef.current += Date.now() - startTimeRef.current;
-      setIsRunning(false);
-    }
-  }, [isRunning]);
-
-  const reset = useCallback(() => {
-    accumulatedRef.current = 0;
-    startTimeRef.current = Date.now();
-    setElapsedMs(0);
+    if (!running.current) return;
+    accumulated.current += Math.max(0, Date.now() - startTime.current);
+    running.current = false; setElapsedMs(accumulated.current); setIsRunning(false);
   }, []);
-
+  const reset = useCallback(() => { accumulated.current = 0; startTime.current = Date.now(); setElapsedMs(0); }, []);
   useEffect(() => {
-    if (isRunning) {
-      intervalRef.current = setInterval(() => {
-        const now = Date.now();
-        const total = accumulatedRef.current + (now - startTimeRef.current);
-        setElapsedMs(total);
-
-        if (countdownMinutes && total >= countdownMinutes * 60 * 1000) {
-          setIsRunning(false);
-          onExpire?.();
-        }
-      }, 100);
-    }
-
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
+    if (!isRunning) return;
+    const update = () => {
+      if (!running.current) return;
+      const total = accumulated.current + Math.max(0, Date.now() - startTime.current);
+      setElapsedMs(total);
+      if (countdownMinutes && total >= countdownMinutes * 60000) {
+        running.current = false; accumulated.current = total; setIsRunning(false); expire.current?.();
+      }
     };
-  }, [isRunning, countdownMinutes, onExpire]);
-
-  const countdownMs = countdownMinutes
-    ? Math.max(0, countdownMinutes * 60 * 1000 - elapsedMs)
-    : null;
-
-  return {
-    elapsedMs,
-    countdownMs,
-    isRunning,
-    isExpired: countdownMs !== null && countdownMs <= 0,
-    start,
-    pause,
-    reset,
-  };
+    const interval = setInterval(update, 1000);
+    const subscription = AppState.addEventListener("change", (state) => { if (state === "active") update(); });
+    return () => { clearInterval(interval); subscription.remove(); };
+  }, [isRunning, countdownMinutes]);
+  const countdownMs = countdownMinutes ? Math.max(0, countdownMinutes * 60000 - elapsedMs) : null;
+  return { elapsedMs, countdownMs, isRunning, isExpired: countdownMs !== null && countdownMs <= 0, start, pause, reset };
 }
-
 export function formatTime(ms: number): string {
-  const totalSeconds = Math.floor(ms / 1000);
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+  const seconds = Math.floor(Math.max(0, ms) / 1000);
+  return `${Math.floor(seconds / 60)}:${(seconds % 60).toString().padStart(2, "0")}`;
 }

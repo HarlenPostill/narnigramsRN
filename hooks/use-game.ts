@@ -1,173 +1,36 @@
-import type { GameSettings, GameState, Tile } from "@/types/game";
-import { posKey } from "@/types/game";
-import {
-  canPeel,
-  checkWinCondition,
-  createTilePool,
-  drawTiles,
-  exchangeTile,
-  validateBoard,
-} from "@/utils/game-engine";
+import type { GameSettings, GameState } from "@/types/game";
+import { canPeel, canSharedPeel, validateBoard, validateBoardWords } from "@/utils/game-engine";
+import { gameReducer, INITIAL_STATE, resumeGameState } from "@/utils/game-session";
+import { loadDictionary } from "@/utils/dictionary";
 import { storage } from "@/utils/storage";
-import { useCallback, useReducer } from "react";
+import { useCallback, useEffect, useReducer, useRef, useState } from "react";
+
+import { AppState } from "react-native";
 
 const SAVE_KEY = "current-game";
 
-type Action =
-  | { type: "INIT"; settings: GameSettings }
-  | { type: "RESTORE"; state: GameState }
-  | { type: "PLACE_TILE"; tileId: string; row: number; col: number }
-  | { type: "RETURN_TILE"; tileId: string }
-  | { type: "MOVE_TILE"; tileId: string; row: number; col: number }
-  | { type: "EXCHANGE_TILE"; tileId: string }
-  | { type: "PEEL" }
-  | { type: "TICK"; elapsedMs: number }
-  | { type: "END_GAME"; isWin: boolean };
+export function useGame({ enabled = true }: { enabled?: boolean } = {}) {
+  const [state, dispatch] = useReducer(gameReducer, INITIAL_STATE);
+  const pausedAt = useRef<number | null>(null);
+  const dictionaryRef = useRef<Set<string> | null>(null);
 
-function reducer(state: GameState, action: Action): GameState {
-  switch (action.type) {
-    case "INIT": {
-      const pool = createTilePool(
-        action.settings.poolSize,
-        action.settings.difficulty,
-      );
-      const { drawn, remaining } = drawTiles(pool, action.settings.handSize);
-      return {
-        hand: drawn,
-        pool: remaining,
-        board: {},
-        startedAt: Date.now(),
-        elapsedMs: 0,
-        settings: action.settings,
-        isComplete: false,
-        isWin: false,
-      };
-    }
+  const [dictionaryReady, setDictionaryReady] = useState(false);
+  const [dictionaryError, setDictionaryError] = useState<string | null>(null);
+  const retryDictionary = useCallback(() => {
+    setDictionaryError(null);
+    void loadDictionary().then((dict) => { dictionaryRef.current = dict; setDictionaryReady(true); })
+      .catch(() => setDictionaryError("The word list could not be loaded. Please retry."));
+  }, []);
+  useEffect(() => { if (enabled) retryDictionary(); }, [enabled, retryDictionary]);
 
-    case "RESTORE":
-      return action.state;
-
-    case "PLACE_TILE": {
-      const tile = state.hand.find((t) => t.id === action.tileId);
-      if (!tile) return state;
-      const key = posKey(action.row, action.col);
-      if (state.board[key]) return state; // cell occupied
-      return {
-        ...state,
-        hand: state.hand.filter((t) => t.id !== action.tileId),
-        board: { ...state.board, [key]: tile },
-      };
-    }
-
-    case "RETURN_TILE": {
-      const entry = Object.entries(state.board).find(
-        ([, t]) => t.id === action.tileId,
-      );
-      if (!entry) return state;
-      const [key, tile] = entry;
-      const newBoard = { ...state.board };
-      delete newBoard[key];
-      return {
-        ...state,
-        hand: [...state.hand, tile],
-        board: newBoard,
-      };
-    }
-
-    case "MOVE_TILE": {
-      const entry = Object.entries(state.board).find(
-        ([, t]) => t.id === action.tileId,
-      );
-      if (!entry) return state;
-      const [oldKey, tile] = entry;
-      const newKey = posKey(action.row, action.col);
-      if (newKey !== oldKey && state.board[newKey]) return state; // target occupied
-      const newBoard = { ...state.board };
-      delete newBoard[oldKey];
-      newBoard[newKey] = tile;
-      return { ...state, board: newBoard };
-    }
-
-    case "EXCHANGE_TILE": {
-      const handTile = state.hand.find((t) => t.id === action.tileId);
-      const boardEntry = Object.entries(state.board).find(
-        ([, t]) => t.id === action.tileId,
-      );
-
-      let tile: Tile | undefined;
-      let newHand = [...state.hand];
-      let newBoard = { ...state.board };
-
-      if (handTile) {
-        tile = handTile;
-        newHand = newHand.filter((t) => t.id !== action.tileId);
-      } else if (boardEntry) {
-        tile = boardEntry[1];
-        delete newBoard[boardEntry[0]];
-      }
-
-      if (!tile) return state;
-
-      const result = exchangeTile(state.pool, tile);
-      if (!result) return state;
-
-      return {
-        ...state,
-        hand: [...newHand, ...result.newTiles],
-        pool: result.remaining,
-        board: newBoard,
-      };
-    }
-
-    case "PEEL": {
-      if (!canPeel(state.hand, state.pool, state.board)) return state;
-      const { drawn, remaining } = drawTiles(state.pool, 1);
-      return {
-        ...state,
-        hand: [...state.hand, ...drawn],
-        pool: remaining,
-      };
-    }
-
-    case "TICK":
-      return { ...state, elapsedMs: action.elapsedMs };
-
-    case "END_GAME":
-      return { ...state, isComplete: true, isWin: action.isWin };
-
-    default:
-      return state;
-  }
-}
-
-const INITIAL_STATE: GameState = {
-  hand: [],
-  pool: [],
-  board: {},
-  startedAt: 0,
-  elapsedMs: 0,
-  settings: {
-    poolSize: 72,
-    handSize: 15,
-    difficulty: "standard",
-    timerMode: "none",
-    showTimer: true,
-  },
-  isComplete: false,
-  isWin: false,
-};
-
-export function useGame() {
-  const [state, dispatch] = useReducer(reducer, INITIAL_STATE);
-
-  const startGame = useCallback((settings: GameSettings) => {
-    dispatch({ type: "INIT", settings });
+  const startGame = useCallback((settings: GameSettings, seed?: string) => {
+    dispatch({ type: "INIT", settings, seed: seed ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`, now: Date.now() });
   }, []);
 
   const restoreGame = useCallback(() => {
     const saved = storage.get<GameState | null>(SAVE_KEY, null);
     if (saved) {
-      dispatch({ type: "RESTORE", state: saved });
+      dispatch({ type: "RESTORE", state: resumeGameState(saved, Date.now()) });
       return true;
     }
     return false;
@@ -175,9 +38,25 @@ export function useGame() {
 
   const saveGame = useCallback(() => {
     if (!state.isComplete && state.startedAt > 0) {
-      storage.set(SAVE_KEY, state);
+      storage.set(SAVE_KEY, { ...state, savedAt: pausedAt.current ?? Date.now() });
     }
   }, [state]);
+
+  const saveRef = useRef(saveGame);
+  useEffect(() => { saveRef.current = saveGame; }, [saveGame]);
+  useEffect(() => {
+    if (!enabled) return;
+    const subscription = AppState.addEventListener("change", (status) => {
+      if (status !== "active" && pausedAt.current === null) {
+        pausedAt.current = Date.now();
+        saveRef.current();
+      } else if (status === "active" && pausedAt.current !== null) {
+        dispatch({ type: "SHIFT_BOT_DEADLINE", delayMs: Math.max(0, Date.now() - pausedAt.current) });
+        pausedAt.current = null;
+      }
+    });
+    return () => subscription.remove();
+  }, [enabled]);
 
   const clearSave = useCallback(() => {
     storage.set(SAVE_KEY, null);
@@ -200,7 +79,7 @@ export function useGame() {
   }, []);
 
   const peel = useCallback(() => {
-    dispatch({ type: "PEEL" });
+    if (dictionaryRef.current) dispatch({ type: "PEEL", dictionary: dictionaryRef.current });
   }, []);
 
   const tick = useCallback((elapsedMs: number) => {
@@ -208,18 +87,57 @@ export function useGame() {
   }, []);
 
   const endGame = useCallback((isWin: boolean) => {
-    dispatch({ type: "END_GAME", isWin });
+    dispatch({ type: "END_GAME", isWin, dictionary: dictionaryRef.current ?? undefined });
     storage.set(SAVE_KEY, null);
   }, []);
 
+  const botTick = useCallback((now: number) => {
+    if (pausedAt.current !== null) return;
+    if (dictionaryRef.current) dispatch({ type: "BOT_TICK", now, dictionary: dictionaryRef.current });
+  }, []);
+
+  const markInvalid = useCallback((tileIds: string[]) => {
+    dispatch({ type: "MARK_INVALID", tileIds });
+  }, []);
+
+  const clearInvalid = useCallback(() => {
+    dispatch({ type: "CLEAR_INVALID" });
+  }, []);
+
+  /** Validate all board words against the dictionary.
+   *  Returns true only after the bundled dictionary is loaded and all words are valid. */
+  const validateWords = useCallback((): boolean => {
+    const dict = dictionaryRef.current;
+    if (!dict) return false;
+
+    const { valid, invalidKeys } = validateBoardWords(state.board, dict);
+    if (!valid) {
+      // Convert board keys to tile IDs for highlighting
+      const tileIds = Array.from(invalidKeys)
+        .map((key) => state.board[key]?.id)
+        .filter(Boolean) as string[];
+      markInvalid(tileIds);
+      return false;
+    }
+    return true;
+  }, [state.board, markInvalid]);
+
   const boardIsValid = validateBoard(state.board);
-  const canPeelNow = canPeel(state.hand, state.pool, state.board);
-  const hasWon = checkWinCondition(state.hand, state.pool, state.board);
+  const isBotMode = state.settings.gameMode === "bot";
+  const canPeelNow = isBotMode
+    ? canSharedPeel(state.hand, state.pool, state.board)
+    : canPeel(state.hand, state.pool, state.board);
+  const hasWon = state.hand.length === 0 && state.pool.length < (isBotMode ? 2 : 1) && boardIsValid;
+  // Show the action button when hand is empty and board is connected
+  // (covers both "peel" when pool > 0 and "finish" when pool = 0)
+  const canAct = dictionaryReady && !state.isComplete && state.hand.length === 0 && boardIsValid && Object.keys(state.board).length > 0;
 
   return {
+    dictionaryReady, dictionaryError, retryDictionary,
     state,
     boardIsValid,
     canPeelNow,
+    canAct,
     hasWon,
     startGame,
     restoreGame,
@@ -232,5 +150,9 @@ export function useGame() {
     peel,
     tick,
     endGame,
+    botTick,
+    validateWords,
+    markInvalid,
+    clearInvalid,
   };
 }

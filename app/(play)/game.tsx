@@ -1,9 +1,8 @@
-import * as Haptics from "expo-haptics";
+import { useConfirm } from "@/components/ui/use-confirm";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  Alert,
-  PlatformColor,
+  ActivityIndicator,
   Pressable,
   Text,
   useWindowDimensions,
@@ -17,63 +16,93 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { BotProgress } from "@/components/game/bot-progress";
+import { OpponentProgress } from "@/components/game/opponent-progress";
 import {
   BOARD_SIZE,
   GameBoard,
   GRID_COUNT,
 } from "@/components/game/game-board";
 import { GameHeader } from "@/components/game/game-header";
+import { GameResultModal } from "@/components/game/game-result-modal";
 import { PlayerHand } from "@/components/game/player-hand";
 import { CELL_SIZE } from "@/components/game/tile";
 import { BIN_SIZE, TileBin } from "@/components/game/tile-bin";
 import { useColors } from "@/hooks/use-colors";
 import { useGame } from "@/hooks/use-game";
+import { useOnlineGame } from "@/hooks/use-online-game";
 import { useStorage } from "@/hooks/use-storage";
 import { formatTime, useTimer } from "@/hooks/use-timer";
-import type { GameSettings } from "@/types/game";
+import type { GameSettings, BotDifficulty } from "@/types/game";
 import { DEFAULT_SETTINGS } from "@/types/game";
+import {
+  lightImpact,
+  mediumImpact,
+  successNotification,
+} from "@/utils/haptics";
 import { recordGame } from "@/utils/stats-manager";
 
+type GameController = Pick<ReturnType<typeof useGame>, 'state' | 'canAct' | 'placeTile' | 'returnTile' | 'moveTile' | 'exchangeTile' | 'peel' | 'validateWords' | 'dictionaryReady' | 'dictionaryError'> & {
+  saveGame?: () => void;
+  clearSave?: () => void;
+  tick?: (elapsed: number) => void;
+  endGame?: (win: boolean) => void;
+  botTick?: (now: number) => void;
+  onlineFinish?: () => void;
+  onlineForfeit?: () => Promise<void>;
+  poolCount?: number;
+  opponent?: { displayName: string; rating: number };
+  opponentConnected?: boolean;
+  pending?: boolean;
+  error?: string | null;
+  retry?: () => void;
+  retryDictionary?: () => void;
+  eloDelta?: number;
+  resultReason?: string;
+};
+
 export default function GameScreen() {
-  const router = useRouter();
-  const params = useLocalSearchParams<{ resume?: string }>();
+  const params = useLocalSearchParams<{ matchId?: string; resume?: string; fallback?: string; seed?: string; botDifficulty?: string }>();
+  if (typeof params.matchId === "string" && /^[A-Za-z0-9_-]{1,100}$/.test(params.matchId)) return <OnlineSession key={params.matchId} matchId={params.matchId} />;
+  return <OfflineSession key={`${params.fallback ?? "offline"}-${params.seed ?? params.resume ?? "new"}`} resume={params.resume === 'true'} fallback={params.fallback === 'true'} seed={params.seed} difficulty={params.botDifficulty} />;
+}
+function OnlineSession({ matchId }: { matchId: string }) {
+  const game = useOnlineGame(matchId);
+  return <GameSurface game={game} isOnline />;
+}
+function OfflineSession({ resume, fallback, seed, difficulty }: { resume: boolean; fallback: boolean; seed?: string; difficulty?: string }) {
+  const game = useGame();
+  const { startGame, restoreGame } = game;
+  const [settings] = useStorage<GameSettings>('settings', DEFAULT_SETTINGS);
+  const started = useRef(false);
+  useEffect(() => {
+    if (started.current) return;
+    started.current = true;
+    if (resume && restoreGame()) return;
+    const botDifficulty: BotDifficulty = difficulty === 'easy' || difficulty === 'hard' ? difficulty : 'medium';
+    startGame(fallback ? { ...settings, gameMode: 'bot', botDifficulty, poolSize: 72, handSize: 15, difficulty: 'standard', timerMode: 'none' } : settings, fallback ? seed : undefined);
+  }, [resume, fallback, seed, difficulty, settings, startGame, restoreGame]);
+  return <GameSurface game={game} isOnline={false} fallback={fallback} />;
+}
+function GameSurface({ game: activeGame, isOnline, fallback = false }: { game: GameController; isOnline: boolean; fallback?: boolean }) {
+  const { back: goBack, canGoBack, replace } = useRouter();
+  const back = useCallback(() => { if (canGoBack()) goBack(); else replace("/"); }, [goBack, canGoBack, replace]);
   const insets = useSafeAreaInsets();
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
-
-  const [settings] = useStorage<GameSettings>("settings", DEFAULT_SETTINGS);
-
-  const {
-    state,
-    canPeelNow,
-    hasWon,
-    startGame,
-    restoreGame,
-    saveGame,
-    clearSave,
-    placeTile,
-    returnTile,
-    moveTile,
-    exchangeTile,
-    peel,
-    tick,
-    endGame,
-  } = useGame();
-
-  const timerMinutes =
-    settings.timerMode === "none" ? undefined : settings.timerMode;
-
-  const timer = useTimer({
-    countdownMinutes: timerMinutes,
-    onExpire: () => {
-      endGame(false);
-    },
-  });
-
+  const { state, canAct, saveGame, clearSave, placeTile, returnTile, moveTile, exchangeTile, peel, tick, endGame, botTick, validateWords, onlineFinish, onlineForfeit } = activeGame;
+  const settings = state.settings;
+  const poolCount = activeGame.poolCount ?? state.pool.length;
+  const finishAvailable = poolCount < (settings.gameMode === 'solo' ? 1 : 2);
+  const onExpire = useCallback(() => endGame?.(false), [endGame]);
+  const timer = useTimer({ countdownMinutes: settings.timerMode === 'none' ? undefined : settings.timerMode, onExpire });
+  const { start: startTimer, pause: pauseTimer, elapsedMs, countdownMs, isRunning } = timer;
   const colors = useColors();
+  const { confirm, dialog } = useConfirm();
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   const [binHighlighted, setBinHighlighted] = useState(false);
-  const [showWinModal, setShowWinModal] = useState(false);
   const [handHeight, setHandHeight] = useState(180);
+  const [surfaceHeight, setSurfaceHeight] = useState(screenHeight);
   const didStart = useRef(false);
 
   // Board transform shared values (lifted here so drop logic can read them)
@@ -88,82 +117,44 @@ export default function GameScreen() {
   const boardContainerY = useRef(0);
   const boardContainerHeight = useRef(screenHeight);
 
-  // Start or restore game on mount
   useEffect(() => {
-    if (didStart.current) return;
+    if (didStart.current || state.startedAt === 0) return;
     didStart.current = true;
-
-    if (params.resume === "true") {
-      const restored = restoreGame();
-      if (restored) {
-        timer.start();
-        return;
-      }
-    }
-    startGame(settings);
-    timer.start();
-  }, [params.resume, restoreGame, settings, startGame, timer]);
-
-  // Sync timer to game state
+    startTimer(state.elapsedMs);
+  }, [state.startedAt, state.elapsedMs, startTimer]);
+  useEffect(() => { if (isRunning) tick?.(elapsedMs); }, [tick, elapsedMs, isRunning]);
   useEffect(() => {
-    if (timer.isRunning) {
-      tick(timer.elapsedMs);
-    }
-  }, [tick, timer.elapsedMs, timer.isRunning]);
-
-  // Check win
+    if (isOnline || state.startedAt === 0 || state.isComplete) return;
+    saveGame?.();
+  }, [isOnline, saveGame, state]);
+  const isBotMode = state.settings.gameMode === 'bot';
   useEffect(() => {
-    if (hasWon && !state.isComplete) {
-      timer.pause();
-      endGame(true);
-      if (process.env.EXPO_OS === "ios") {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      }
-      recordGame({
-        id: `game-${Date.now()}`,
-        date: new Date().toISOString(),
-        durationMs: timer.elapsedMs,
-        difficulty: state.settings.difficulty,
-        poolSize: state.settings.poolSize,
-        timerMode: state.settings.timerMode,
-        isWin: true,
-        tilesPlaced: Object.keys(state.board).length,
-      });
-      setShowWinModal(true);
-    }
-  }, [
-    endGame,
-    hasWon,
-    state.board,
-    state.isComplete,
-    state.settings.difficulty,
-    state.settings.poolSize,
-    state.settings.timerMode,
-    timer,
-  ]);
-
-  // Auto-save on state changes
+    if (!isBotMode || state.isComplete || state.startedAt === 0) return;
+    const interval = setInterval(() => botTick?.(Date.now()), 500);
+    return () => clearInterval(interval);
+  }, [isBotMode, state.isComplete, state.startedAt, botTick]);
+  const recorded = useRef(false);
   useEffect(() => {
-    if (state.startedAt > 0 && !state.isComplete) {
-      saveGame();
-    }
-  }, [saveGame, state.hand.length, state.isComplete, state.startedAt]);
+    if (!state.isComplete || recorded.current) return;
+    recorded.current = true; pauseTimer(); clearSave?.();
+    if (activeGame.resultReason === "abandoned") return;
+    recordGame({ id: `game-${state.sessionId ?? state.startedAt}`, date: new Date().toISOString(), durationMs: state.elapsedMs, difficulty: settings.difficulty, poolSize: settings.poolSize, timerMode: settings.timerMode, isWin: state.isWin, tilesPlaced: Object.keys(state.board).length, gameMode: settings.gameMode });
+  }, [state, settings, pauseTimer, clearSave, activeGame.resultReason]);
 
   // Convert absolute screen position to board grid coordinates
   // accounting for the board's pan/zoom transform
   const screenToGrid = useCallback(
     (absX: number, absY: number) => {
       const contY = boardContainerY.current;
-      const contH = boardContainerHeight.current;
 
       // Board view base offset (before transforms)
       const baseLeft = -(BOARD_SIZE - screenWidth) / 2;
       const baseTop = -(BOARD_SIZE - screenHeight) / 2;
 
       // Current transform values
-      const s = boardScale.value;
-      const tx = boardTranslateX.value;
-      const ty = boardTranslateY.value;
+      const s = boardScale.get();
+      const tx = boardTranslateX.get();
+      const ty = boardTranslateY.get();
 
       // Position relative to board container
       const relX = absX;
@@ -191,12 +182,13 @@ export default function GameScreen() {
   // Drop zone detection
   const handleTileDragEnd = useCallback(
     (tileId: string, absX: number, absY: number) => {
+      if (activeGame.pending || state.isComplete) return;
       const isFromHand = state.hand.some((t) => t.id === tileId);
       const isFromBoard = Object.values(state.board).some(
         (t) => t.id === tileId,
       );
 
-      const handTop = screenHeight - handHeight;
+      const handTop = surfaceHeight - handHeight;
       const binAreaTop = handTop - BIN_SIZE - 16;
 
       // Bin position depends on handMode: right side when "right", left side when "left"
@@ -210,12 +202,10 @@ export default function GameScreen() {
         absX < binRight &&
         absY > binAreaTop &&
         absY < binAreaTop + BIN_SIZE &&
-        state.pool.length >= 2
+        poolCount >= 2
       ) {
         exchangeTile(tileId);
-        if (process.env.EXPO_OS === "ios") {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-        }
+        mediumImpact();
         setBinHighlighted(false);
         return;
       }
@@ -224,9 +214,7 @@ export default function GameScreen() {
       if (absY > handTop) {
         if (isFromBoard) {
           returnTile(tileId);
-          if (process.env.EXPO_OS === "ios") {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          }
+          lightImpact();
         }
         return;
       }
@@ -240,15 +228,15 @@ export default function GameScreen() {
         moveTile(tileId, row, col);
       }
 
-      if (process.env.EXPO_OS === "ios") {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      }
+      lightImpact();
     },
     [
+      activeGame.pending,
+      state.isComplete,
       state.hand,
       state.board,
-      state.pool.length,
-      screenHeight,
+      poolCount,
+      surfaceHeight,
       screenWidth,
       handHeight,
       settings.handMode,
@@ -261,38 +249,40 @@ export default function GameScreen() {
   );
 
   const handlePeel = useCallback(() => {
-    peel();
-    if (process.env.EXPO_OS === "ios") {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    if (!validateWords()) {
+      setValidationError('Connect your tiles into valid words before peeling. Invalid tiles are marked.');
+      return;
     }
-  }, [peel]);
-
+    setValidationError(null);
+    if (finishAvailable) {
+      if (isOnline) onlineFinish?.();
+      else { endGame?.(true); successNotification(); }
+    } else peel();
+    mediumImpact();
+  }, [validateWords, finishAvailable, isOnline, onlineFinish, endGame, peel]);
+  const leave = useCallback(async () => {
+    if (isOnline) { if (state.startedAt === 0 || activeGame.error) { back(); return; } await onlineForfeit?.(); return; }
+    pauseTimer(); saveGame?.(); back();
+  }, [isOnline, onlineForfeit, pauseTimer, saveGame, back, state.startedAt, activeGame.error]);
   const handleQuit = useCallback(() => {
-    Alert.alert("Leave Game?", "Your progress will be saved.", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Leave",
-        style: "destructive",
-        onPress: () => {
-          timer.pause();
-          saveGame();
-          router.back();
-        },
-      },
-    ]);
-  }, [timer, saveGame, router]);
+    const unavailable = isOnline && (state.startedAt === 0 || activeGame.error);
+    const title = unavailable ? 'Leave match screen?' : isOnline ? 'Forfeit ranked game?' : 'Leave game?';
+    const message = unavailable ? 'Your match may still be active. Open Ranked to reconnect; disconnect rules still apply.' : isOnline ? 'This counts as a ranked loss.' : 'Your progress will be saved.';
+    confirm(title, message, () => { void leave(); }, unavailable ? 'Leave' : isOnline ? 'Forfeit' : 'Leave');
+  }, [isOnline, leave, state.startedAt, activeGame.error, confirm]);
 
   return (
     <GestureHandlerRootView
+      onLayout={event => setSurfaceHeight(event.nativeEvent.layout.height)}
       style={{ flex: 1, backgroundColor: colors.screenBg }}
     >
       <GameHeader
-        elapsedMs={timer.elapsedMs}
-        countdownMs={timer.countdownMs}
+        elapsedMs={elapsedMs}
+        countdownMs={countdownMs}
         showTimer={
           state.settings.showTimer || state.settings.timerMode !== "none"
         }
-        tilesInPool={state.pool.length}
+        tilesInPool={poolCount}
         tilesInHand={state.hand.length}
       />
 
@@ -309,6 +299,7 @@ export default function GameScreen() {
           boardContainerY.current = y;
           boardContainerHeight.current = h;
         }}
+        invalidTileIds={state.invalidTileIds}
       />
 
       {/* Bin + Peel overlay */}
@@ -324,16 +315,18 @@ export default function GameScreen() {
           gap: 12,
         }}
       >
-        {canPeelNow && (
+        {!!canAct && !state.isComplete && (
           <Animated.View
             entering={FadeIn}
             exiting={FadeOut}
             style={{ flexGrow: 1 }}
           >
             <Pressable
+              accessibilityRole="button"
               onPress={handlePeel}
               style={{
-                backgroundColor: "#0062FF",
+                backgroundColor:
+                  finishAvailable ? "#2E7D32" : "#0062FF",
                 paddingHorizontal: 12,
                 height: 77,
                 justifyContent: "center",
@@ -344,36 +337,61 @@ export default function GameScreen() {
               }}
             >
               <Text style={{ color: "white", fontWeight: "700", fontSize: 15 }}>
-                Peel!
+                {finishAvailable ? "Narnigrams!" : "Peel!"}
               </Text>
             </Pressable>
           </Animated.View>
         )}
         <TileBin
-          isActive={state.pool.length >= 2}
+          isActive={poolCount >= 2}
           isHighlighted={binHighlighted}
         />
       </View>
 
       {/* Quit button */}
       <Pressable
+        accessibilityRole="button"
         onPress={handleQuit}
         style={{
           position: "absolute",
           left: settings.handMode === "left" ? screenWidth - 16 - 125 : 16,
           top: insets.top + 75,
           width: 125,
-          height: 40,
+          minHeight: 44,
           borderRadius: 20,
           backgroundColor: colors.buttonMutedBg,
           justifyContent: "center",
           alignItems: "center",
         }}
       >
-        <Text style={{ fontSize: 18, color: PlatformColor("secondaryLabel") }}>
+        <Text style={{ fontSize: 18, color: colors.textSecondary }}>
           Leave Game
         </Text>
       </Pressable>
+
+      {/* Bot progress */}
+      {!!isBotMode && !!state.botState && (
+        <View
+          style={{
+            position: "absolute",
+            top: insets.top + 75,
+            [settings.handMode === "left" ? "left" : "right"]: 16,
+          }}
+        >
+          <BotProgress
+            botState={state.botState}
+            difficulty={state.settings.botDifficulty ?? "medium"}
+          />
+        </View>
+      )}
+
+      {isOnline && activeGame.opponent ? <View style={{ position: 'absolute', top: insets.top + 75, right: 16 }}><OpponentProgress opponent={activeGame.opponent} connected={activeGame.opponentConnected ?? false} /></View> : null}
+      {(validationError || fallback || activeGame.error || !activeGame.dictionaryReady || activeGame.pending || state.startedAt === 0) ? <View style={{ position: 'absolute', top: insets.top + 130, left: 16, right: 16, padding: 12, borderRadius: 12, backgroundColor: colors.cardBg }}>
+        <Text accessibilityLiveRegion="polite" style={{ color: colors.textPrimary }}>{validationError ?? activeGame.error ?? activeGame.dictionaryError ?? (!activeGame.dictionaryReady ? 'Loading dictionary…' : state.startedAt === 0 ? 'Connecting to match…' : activeGame.pending ? 'Syncing move…' : 'AI fallback · practice only · no rating change')}</Text>
+        {activeGame.dictionaryError && activeGame.retryDictionary ? <Pressable accessibilityRole="button" onPress={activeGame.retryDictionary} style={{ padding: 12 }}><Text style={{ color: "#007AFF" }}>Retry dictionary</Text></Pressable> : null}
+        {(activeGame.error && activeGame.retry) ? <Pressable accessibilityRole="button" onPress={activeGame.retry} style={{ padding: 12 }}><Text style={{ color: '#007AFF' }}>Retry connection</Text></Pressable> : null}
+        {state.startedAt === 0 && !activeGame.error ? <ActivityIndicator /> : null}
+      </View> : null}
 
       <View
         style={{ paddingBottom: insets.bottom }}
@@ -382,137 +400,14 @@ export default function GameScreen() {
         <PlayerHand tiles={state.hand} onDragEnd={handleTileDragEnd} />
       </View>
 
-      {/* Win Modal */}
-      {showWinModal && (
-        <Animated.View
-          entering={FadeIn}
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: colors.overlayBg,
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          <View
-            style={{
-              backgroundColor: colors.cardBg,
-              borderRadius: 20,
-              borderCurve: "continuous",
-              padding: 32,
-              alignItems: "center",
-              gap: 16,
-              marginHorizontal: 40,
-              boxShadow: colors.modalShadow,
-            }}
-          >
-            <Text style={{ fontSize: 48 }}>🎉</Text>
-            <Text
-              style={{
-                fontSize: 28,
-                fontWeight: "800",
-                color: colors.textPrimary,
-              }}
-            >
-              You Won!
-            </Text>
-            <Text
-              style={{
-                fontSize: 17,
-                color: colors.textSecondary,
-                textAlign: "center",
-              }}
-            >
-              Completed in {formatTime(timer.elapsedMs)}
-              {"\n"}
-              {Object.keys(state.board).length} tiles placed
-            </Text>
-            <Pressable
-              onPress={() => {
-                clearSave();
-                router.back();
-              }}
-              style={{
-                backgroundColor: "#007AFF",
-                paddingHorizontal: 32,
-                paddingVertical: 14,
-                borderRadius: 14,
-                borderCurve: "continuous",
-                marginTop: 8,
-              }}
-            >
-              <Text style={{ color: "white", fontWeight: "600", fontSize: 17 }}>
-                Done
-              </Text>
-            </Pressable>
-          </View>
-        </Animated.View>
-      )}
-
-      {/* Game Over (timer expired) */}
-      {state.isComplete && !state.isWin && (
-        <Animated.View
-          entering={FadeIn}
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: colors.overlayBg,
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          <View
-            style={{
-              backgroundColor: colors.cardBg,
-              borderRadius: 20,
-              borderCurve: "continuous",
-              padding: 32,
-              alignItems: "center",
-              gap: 16,
-              marginHorizontal: 40,
-              boxShadow: colors.modalShadow,
-            }}
-          >
-            <Text style={{ fontSize: 48 }}>⏰</Text>
-            <Text
-              style={{
-                fontSize: 28,
-                fontWeight: "800",
-                color: colors.textPrimary,
-              }}
-            >
-              Time&apos;s Up!
-            </Text>
-            <Text style={{ fontSize: 17, color: colors.textSecondary }}>
-              {state.hand.length} tiles remaining
-            </Text>
-            <Pressable
-              onPress={() => {
-                clearSave();
-                router.back();
-              }}
-              style={{
-                backgroundColor: "#007AFF",
-                paddingHorizontal: 32,
-                paddingVertical: 14,
-                borderRadius: 14,
-                borderCurve: "continuous",
-                marginTop: 8,
-              }}
-            >
-              <Text style={{ color: "white", fontWeight: "600", fontSize: 17 }}>
-                Done
-              </Text>
-            </Pressable>
-          </View>
-        </Animated.View>
-      )}
+      {state.isComplete ? <GameResultModal
+        emoji={state.isWin ? '🎉' : '🏁'}
+        title={activeGame.resultReason === 'abandoned' ? 'Match abandoned' : state.isWin ? 'You won!' : 'Game complete'}
+        subtitle={`${state.isWin ? 'Finished' : 'Keep practicing'} · ${formatTime(state.elapsedMs)}\n${Object.keys(state.board).length} tiles placed${activeGame.resultReason === 'abandoned' ? '\nBoth players disconnected · no rating change' : isOnline ? `\nRanked human match · ${activeGame.resultReason ?? 'completed'}` : isBotMode ? '\nAI practice · no rating change' : ''}`}
+        eloDelta={activeGame.eloDelta}
+        onDismiss={() => { clearSave?.(); back(); }}
+      /> : null}
+      {dialog}
     </GestureHandlerRootView>
   );
 }

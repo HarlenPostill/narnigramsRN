@@ -1,31 +1,16 @@
 import { useCallback, useRef, useSyncExternalStore } from "react";
 import { storage } from "@/utils/storage";
-
-export function useStorage<T>(
-  key: string,
-  defaultValue: T
-): [T, (value: T) => void] {
-  const cachedRaw = useRef<string | null>(null);
-  const cachedValue = useRef<T>(defaultValue);
-
+export function useStorage<T>(key: string, defaultValue: T): [T, (value: T) => void] {
+  const cache = useRef<{ key: string; raw: string | null; value: T } | null>(null);
   const getSnapshot = useCallback(() => {
-    const raw = localStorage.getItem(key);
-    if (raw !== cachedRaw.current) {
-      cachedRaw.current = raw;
-      cachedValue.current = raw ? JSON.parse(raw) : defaultValue;
+    const raw = storage.raw(key);
+    if (!cache.current || cache.current.key !== key || raw !== cache.current.raw) {
+      cache.current = { key, raw, value: storage.get(key, defaultValue) };
     }
-    return cachedValue.current;
+    return cache.current.value;
   }, [key, defaultValue]);
-
-  const value = useSyncExternalStore(
-    (cb) => storage.subscribe(key, cb),
-    getSnapshot
-  );
-
-  const setValue = useCallback(
-    (newValue: T) => storage.set(key, newValue),
-    [key]
-  );
-
+  const subscribe = useCallback((cb: () => void) => storage.subscribe(key, cb), [key]);
+  const value = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+  const setValue = useCallback((newValue: T) => storage.set(key, newValue), [key]);
   return [value, setValue];
 }

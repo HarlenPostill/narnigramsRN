@@ -1,60 +1,35 @@
 import type { GameRecord, GameStats } from "@/types/game";
+import { addRecord, emptyStats } from "../shared/stats";
 import { storage } from "./storage";
-
-const STATS_KEY = "game-stats";
-
-function getStats(): GameStats {
-  return storage.get<GameStats>(STATS_KEY, {
-    totalGames: 0,
-    totalWins: 0,
-    currentStreak: 0,
-    bestStreak: 0,
-    bestTimes: {},
-    records: [],
-  });
+let owner: string | null = null;
+export function statsKey(uid: string | null) {
+  return uid ? `account-stats-${uid}` : "game-stats";
 }
-
-function saveStats(stats: GameStats) {
-  storage.set(STATS_KEY, stats);
+export function setStatsOwner(uid: string | null) {
+  owner = uid;
 }
-
+export function pendingKey(uid: string) {
+  return `pending-stats-${uid}`;
+}
 export function recordGame(record: GameRecord) {
-  const stats = getStats();
-
-  stats.totalGames++;
-  if (record.isWin) {
-    stats.totalWins++;
-    stats.currentStreak++;
-    if (stats.currentStreak > stats.bestStreak) {
-      stats.bestStreak = stats.currentStreak;
-    }
-
-    const modeKey = `${record.difficulty}-${record.poolSize}` as const;
-    const current = stats.bestTimes[modeKey];
-    if (!current || record.durationMs < current) {
-      stats.bestTimes[modeKey] = record.durationMs;
-    }
-  } else {
-    stats.currentStreak = 0;
+  const stats = getGameStats();
+  if (stats.records.some((r) => r.id === record.id)) return;
+  storage.set(statsKey(owner), addRecord(stats, record));
+  if (owner && record.gameMode !== "online") {
+    const key = pendingKey(owner);
+    storage.set(key, [...storage.get<GameRecord[]>(key, []), record]);
   }
-
-  stats.records.push(record);
-  saveStats(stats);
 }
-
 export function getGameStats(): GameStats {
-  return getStats();
+  return storage.get(statsKey(owner), emptyStats());
 }
-
 export function getRecentGames(days: number): GameRecord[] {
-  const stats = getStats();
-  const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
-  return stats.records.filter((r) => new Date(r.date).getTime() >= cutoff);
+  const cutoff = Date.now() - days * 86400000;
+  return getGameStats().records.filter((r) => Date.parse(r.date) >= cutoff);
 }
-
 export function getAveragePlayTime(): number {
-  const stats = getStats();
-  if (stats.records.length === 0) return 0;
-  const total = stats.records.reduce((sum, r) => sum + r.durationMs, 0);
-  return total / stats.records.length;
+  const records = getGameStats().records;
+  return records.length
+    ? records.reduce((sum, r) => sum + r.durationMs, 0) / records.length
+    : 0;
 }

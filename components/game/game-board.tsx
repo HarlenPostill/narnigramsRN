@@ -24,6 +24,7 @@ interface GameBoardProps {
   savedTranslateX: SharedValue<number>;
   savedTranslateY: SharedValue<number>;
   onContainerLayout?: (y: number, height: number) => void;
+  invalidTileIds?: string[];
 }
 
 function GridBackground({ lineColor }: { lineColor: string }) {
@@ -67,43 +68,44 @@ export function GameBoard({
   savedTranslateX,
   savedTranslateY,
   onContainerLayout,
+  invalidTileIds,
 }: GameBoardProps) {
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const colors = useColors();
 
   const pinch = Gesture.Pinch()
     .onUpdate((e) => {
-      scale.value = Math.min(Math.max(savedScale.value * e.scale, 0.3), 3);
+      scale.set(Math.min(Math.max(savedScale.get() * e.scale, 0.3), 3));
     })
     .onEnd(() => {
-      savedScale.value = scale.value;
-      if (scale.value < 0.5) {
-        scale.value = withSpring(0.5);
-        savedScale.value = 0.5;
-      } else if (scale.value > 2.5) {
-        scale.value = withSpring(2.5);
-        savedScale.value = 2.5;
+      savedScale.set(scale.get());
+      if (scale.get() < 0.5) {
+        scale.set(withSpring(0.5));
+        savedScale.set(0.5);
+      } else if (scale.get() > 2.5) {
+        scale.set(withSpring(2.5));
+        savedScale.set(2.5);
       }
     });
 
   const pan = Gesture.Pan()
     .minPointers(1)
     .onUpdate((e) => {
-      translateX.value = savedTranslateX.value + e.translationX;
-      translateY.value = savedTranslateY.value + e.translationY;
+      translateX.set(savedTranslateX.get() + e.translationX);
+      translateY.set(savedTranslateY.get() + e.translationY);
     })
     .onEnd(() => {
-      savedTranslateX.value = translateX.value;
-      savedTranslateY.value = translateY.value;
+      savedTranslateX.set(translateX.get());
+      savedTranslateY.set(translateY.get());
     });
 
   const composed = Gesture.Simultaneous(pinch, pan);
 
   const boardStyle = useAnimatedStyle(() => ({
     transform: [
-      { translateX: translateX.value },
-      { translateY: translateY.value },
-      { scale: scale.value },
+      { translateX: translateX.get() },
+      { translateY: translateY.get() },
+      { scale: scale.get() },
     ],
   }));
 
@@ -117,7 +119,6 @@ export function GameBoard({
         onContainerLayout?.(y, height);
       }}
     >
-      <GestureDetector gesture={composed}>
         <Animated.View
           style={[
             {
@@ -130,7 +131,9 @@ export function GameBoard({
             boardStyle,
           ]}
         >
-          <GridBackground lineColor={colors.gridLine} />
+          <GestureDetector gesture={composed}>
+            <View style={{ position: "absolute", width: BOARD_SIZE, height: BOARD_SIZE }}><GridBackground lineColor={colors.gridLine} /></View>
+          </GestureDetector>
           {boardEntries.map(([key, tile]) => {
             const { row, col } = parseKey(key);
             return (
@@ -142,12 +145,15 @@ export function GameBoard({
                   top: row * CELL_SIZE,
                 }}
               >
-                <DraggableTile tile={tile} onDragEnd={onTileDragEnd} />
+                <DraggableTile
+                  tile={tile}
+                  onDragEnd={onTileDragEnd}
+                  isInvalid={invalidTileIds?.includes(tile.id)}
+                />
               </View>
             );
           })}
         </Animated.View>
-      </GestureDetector>
     </View>
   );
 }

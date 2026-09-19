@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "rootDir": "..",
+    "outDir": "dist"
+  },
+  "include": [
+    "src/**/*.ts",
+    "../shared/**/*.ts",
+    "../types/game.ts",
+    "../utils/game-engine.ts",
+    "../utils/word-extraction.ts",
+    "../utils/seeded-random.ts",
+    "../utils/tile-distribution.ts"
+  ]
+}

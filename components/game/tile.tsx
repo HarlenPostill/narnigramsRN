@@ -7,24 +7,25 @@ const CELL_SIZE = 50;
 interface TileProps {
   tile: TileType;
   size?: number;
+  isInvalid?: boolean;
 }
 
-export function Tile({ tile, size = CELL_SIZE }: TileProps) {
+export function Tile({ tile, size = CELL_SIZE, isInvalid }: TileProps) {
   const colors = useColors();
   const fontSize = size * 0.6;
   const pointsSize = size * 0.22;
 
   return (
     <View
-      accessibilityLabel={`Letter ${tile.letter}, ${tile.points} points`}
+      accessibilityLabel={`Letter ${tile.letter}, ${tile.points} points${isInvalid ? ", invalid word" : ""}`}
       style={{
         width: size,
         height: size,
         borderRadius: size * 0.18,
         borderCurve: "continuous",
-        borderColor: colors.tileBorder,
-        borderWidth: 0.005 * size,
-        backgroundColor: colors.tileBg,
+        borderColor: isInvalid ? "#E53935" : colors.tileBorder,
+        borderWidth: isInvalid ? 2 : 0.005 * size,
+        backgroundColor: isInvalid ? "#FFCDD2" : colors.tileBg,
         justifyContent: "center",
         alignItems: "center",
         boxShadow: colors.tileInsetShadow,
@@ -40,6 +41,7 @@ export function Tile({ tile, size = CELL_SIZE }: TileProps) {
       >
         {tile.letter}
       </Text>
+      {isInvalid ? <Text style={{ position: "absolute", top: 1, right: 3, fontSize: 12, fontWeight: "900", color: "#8B0000" }}>!</Text> : null}
       <Text
         style={{
           fontSize: pointsSize,

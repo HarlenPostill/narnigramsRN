@@ -54,6 +54,20 @@ export type PoolSize = 50 | 72 | 100;
 export type HandSize = 11 | 15 | 21;
 export type TimerMode = "none" | 5 | 10 | 15 | 30;
 
+export type BotDifficulty = "easy" | "medium" | "hard";
+export type GameMode = "solo" | "bot" | "online";
+
+export interface BotState {
+  hand: Tile[];
+  board: Record<string, Tile>;
+  seed: string;
+  decision: number;
+  handSize: number;
+  tilesPlaced: number;
+  isFinished: boolean;
+  nextActionAt: number; // timestamp when bot acts next
+}
+
 export interface GameSettings {
   poolSize: PoolSize;
   handMode: HandMode;
@@ -61,6 +75,8 @@ export interface GameSettings {
   difficulty: Difficulty;
   timerMode: TimerMode;
   showTimer: boolean;
+  gameMode: GameMode;
+  botDifficulty?: BotDifficulty;
 }
 
 export const DEFAULT_SETTINGS: GameSettings = {
@@ -70,9 +86,12 @@ export const DEFAULT_SETTINGS: GameSettings = {
   difficulty: "standard",
   timerMode: "none",
   showTimer: true,
+  gameMode: "solo",
 };
 
 export interface GameState {
+  sessionId?: string;
+  savedAt?: number;
   hand: Tile[];
   pool: Tile[];
   board: Record<string, Tile>; // serializable version of BoardPlacements
@@ -81,9 +100,13 @@ export interface GameState {
   settings: GameSettings;
   isComplete: boolean;
   isWin: boolean;
+  botState?: BotState;
+  invalidTileIds?: string[];
 }
 
 export interface GameRecord {
+  gameMode?: GameMode;
+  botDifficulty?: BotDifficulty;
   id: string;
   date: string;
   durationMs: number;
@@ -95,6 +118,7 @@ export interface GameRecord {
 }
 
 export interface GameStats {
+  byMode?: Partial<Record<GameMode, { games: number; wins: number }>>;
   totalGames: number;
   totalWins: number;
   currentStreak: number;
@@ -102,6 +126,15 @@ export interface GameStats {
   bestTimes: Partial<Record<`${Difficulty}-${PoolSize}`, number>>;
   records: GameRecord[];
 }
+
+export const EMPTY_STATS: GameStats = {
+  totalGames: 0,
+  totalWins: 0,
+  currentStreak: 0,
+  bestStreak: 0,
+  bestTimes: {},
+  records: [],
+};
 
 export const LETTER_POINTS: Record<Letter, number> = {
   A: 1,
@@ -131,3 +164,11 @@ export const LETTER_POINTS: Record<Letter, number> = {
   Y: 4,
   Z: 10,
 };
+
+export const SOLO_PRESETS = { short: { poolSize: 50, handSize: 11 }, medium: { poolSize: 72, handSize: 15 }, long: { poolSize: 100, handSize: 21 } } as const;
+export function soloSettings(length: keyof typeof SOLO_PRESETS, settings: GameSettings = DEFAULT_SETTINGS): GameSettings {
+  return { ...settings, ...SOLO_PRESETS[length], gameMode: "solo" };
+}
+export function practiceSettings(difficulty: BotDifficulty, settings: GameSettings = DEFAULT_SETTINGS): GameSettings {
+  return { ...settings, poolSize: 72, handSize: 15, gameMode: "bot", botDifficulty: difficulty };
+}

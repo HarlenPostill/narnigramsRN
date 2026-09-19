@@ -2,7 +2,8 @@ import { useColors } from "@/hooks/use-colors";
 import { useStorage } from "@/hooks/use-storage";
 import { formatTime } from "@/hooks/use-timer";
 import { DEFAULT_SETTINGS, GameSettings } from "@/types/game";
-import { PlatformColor, Text, View } from "react-native";
+import { Text, View } from "react-native";
+import { PlatformColor } from "@/utils/platform-color";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 interface GameHeaderProps {
@@ -84,7 +85,7 @@ export function GameHeader({
         </View>
       </View>
 
-      {showTimer && (
+      {!!showTimer && (
         <Text
           style={{
             fontSize: 28,
