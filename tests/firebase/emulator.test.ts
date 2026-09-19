@@ -1,8 +1,22 @@
 import {
-    assertFails,
-    assertSucceeds,
-    initializeTestEnvironment,
-    type RulesTestEnvironment,
+  initializeApp as initializeClient,
+  deleteApp as deleteClient,
+} from "firebase/app";
+import {
+  getAuth as getClientAuth,
+  connectAuthEmulator,
+  signInAnonymously,
+  linkWithCredential,
+  EmailAuthProvider,
+  signOut,
+  signInWithEmailAndPassword,
+  onIdTokenChanged,
+} from "firebase/auth";
+import {
+  assertFails,
+  assertSucceeds,
+  initializeTestEnvironment,
+  type RulesTestEnvironment,
 } from "@firebase/rules-unit-testing";
 import { collection, doc, getDoc, getDocs, setDoc } from "firebase/firestore";
 import assert from "node:assert/strict";
@@ -10,16 +24,16 @@ import { readFileSync } from "node:fs";
 import test, { after, before } from "node:test";
 import { GameService } from "../../functions/src/service";
 import {
-    deleteApp,
-    getAuth,
-    getFirestore,
-    initializeApp,
+  deleteApp,
+  getAuth,
+  getFirestore,
+  initializeApp,
 } from "../../functions/test-support";
 import { ONLINE_PROTOCOL, ONLINE_RULESET } from "../../shared/online";
 const enabled = Boolean(process.env.FIRESTORE_EMULATOR_HOST);
 let environment: RulesTestEnvironment;
 const admin = enabled
-  ? initializeApp({ projectId: "narnigrams" }, "tests")
+  ? initializeApp({ projectId: "demo-narnigrams" })
   : undefined;
 let now = 1_000_000;
 const db = admin ? getFirestore(admin) : undefined;
@@ -29,7 +43,7 @@ const service = db
 before(async () => {
   if (enabled)
     environment = await initializeTestEnvironment({
-      projectId: "narnigrams",
+      projectId: "demo-narnigrams",
       firestore: { rules: readFileSync("firestore.rules", "utf8") },
     });
 });
@@ -63,9 +77,23 @@ test(
             secret: "pool",
           });
         });
-        const alice = environment.authenticatedContext("alice").firestore();
-        const mallory = environment.authenticatedContext("mallory").firestore();
+        const alice = environment
+          .authenticatedContext("alice", {
+            firebase: { sign_in_provider: "password" },
+          })
+          .firestore();
+        const mallory = environment
+          .authenticatedContext("mallory", {
+            firebase: { sign_in_provider: "password" },
+          })
+          .firestore();
         const guest = environment.unauthenticatedContext().firestore();
+        const anonymous = environment
+          .authenticatedContext("alice", {
+            firebase: { sign_in_provider: "anonymous" },
+          })
+          .firestore();
+        await assertFails(getDoc(doc(anonymous, "players", "alice")));
         await assertSucceeds(getDoc(doc(alice, "players", "alice")));
         await assertSucceeds(getDoc(doc(alice, "queue", "alice")));
         await assertSucceeds(getDoc(doc(alice, "matches", "one")));
@@ -342,6 +370,165 @@ test(
       },
     );
     await t.test(
+      "account stats import is idempotent, isolated, and cannot forge ranked results",
+      async () => {
+        await environment.clearFirestore();
+        await service!.ensurePlayer("stats-owner");
+        const record = {
+          id: "legacy-game",
+          date: "2026-09-19",
+          durationMs: 20000,
+          difficulty: "standard",
+          poolSize: 72,
+          timerMode: "none",
+          isWin: true,
+          tilesPlaced: 72,
+          gameMode: "solo",
+        };
+        const archive = {
+          totalGames: 600,
+          totalWins: 400,
+          currentStreak: 0,
+          bestStreak: 20,
+          bestTimes: { "standard-72": 10000 },
+          records: [],
+        };
+        await service!.migrateStats("stats-owner", "device-one", archive);
+        await service!.migrateStats("stats-owner", "device-one", archive);
+        await Promise.all([
+          service!.syncStats("stats-owner", [record]),
+          service!.syncStats("stats-owner", [record]),
+        ]);
+        const stats = await db!.doc("accountStats/stats-owner").get();
+        assert.equal(stats.get("totalGames"), 601);
+        assert.equal(stats.get("totalWins"), 401);
+        assert.equal(stats.get("bestStreak"), 20);
+        assert.equal(
+          (await db!.doc("players/stats-owner").get()).get("rating"),
+          800,
+        );
+        await assert.rejects(
+          service!.syncStats("stats-owner", [
+            { ...record, gameMode: "online" },
+          ]),
+        );
+        const owner = environment
+          .authenticatedContext("stats-owner", {
+            firebase: { sign_in_provider: "apple.com" },
+          })
+          .firestore();
+        const other = environment
+          .authenticatedContext("other", {
+            firebase: { sign_in_provider: "password" },
+          })
+          .firestore();
+        await assertSucceeds(getDoc(doc(owner, "accountStats/stats-owner")));
+        await assertFails(getDoc(doc(other, "accountStats/stats-owner")));
+        await assertFails(
+          setDoc(doc(owner, "accountStats/stats-owner"), { totalWins: 9999 }),
+        );
+        await service!.deleteAccount("stats-owner");
+        assert.equal(
+          (await db!.doc("accountStats/stats-owner").get()).exists,
+          false,
+        );
+        assert.equal(
+          (await db!.collection("accountStats/stats-owner/receipts").get())
+            .empty,
+          true,
+        );
+      },
+    );
+    await t.test(
+      "legacy identity upgrades in place and email restores it after sign-out",
+      async () => {
+        const client = initializeClient(
+          { apiKey: "demo-key", projectId: "demo-narnigrams" },
+          "upgrade-test",
+        );
+        const auth = getClientAuth(client);
+        connectAuthEmulator(
+          auth,
+          `http://${process.env.FIREBASE_AUTH_EMULATOR_HOST}`,
+          { disableWarnings: true },
+        );
+        const identities: (string | null)[] = [];
+        const stop = onIdTokenChanged(auth, (user) =>
+          identities.push(user && !user.isAnonymous ? user.uid : null),
+        );
+        try {
+          const legacy = await signInAnonymously(auth);
+          await service!.ensurePlayer(legacy.user.uid);
+          await db!.doc(`players/${legacy.user.uid}`).update({ rating: 1120 });
+          const email = `upgrade-${Date.now()}@example.com`;
+          await linkWithCredential(
+            legacy.user,
+            EmailAuthProvider.credential(email, "test-password-123"),
+          );
+          const token = await auth.currentUser!.getIdToken(true);
+          assert.equal(auth.currentUser!.isAnonymous, false);
+          assert.equal(auth.currentUser!.uid, legacy.user.uid);
+          assert.ok(
+            identities.includes(legacy.user.uid),
+            "Upgrade must notify the auth provider without changing UID",
+          );
+          const response = await fetch(
+            "http://127.0.0.1:5001/demo-narnigrams/australia-southeast1/ensurePlayer",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({ data: {} }),
+            },
+          );
+          assert.equal(response.status, 200);
+          assert.equal(
+            ((await response.json()) as { result: { rating: number } }).result
+              .rating,
+            1120,
+          );
+          await signOut(auth);
+          await signInWithEmailAndPassword(auth, email, "test-password-123");
+          assert.equal(auth.currentUser!.uid, legacy.user.uid);
+        } finally {
+          stop();
+          await deleteClient(client);
+        }
+      },
+    );
+    await t.test("callables reject anonymous accounts", async () => {
+      const response = await fetch(
+        `http://${process.env.FIREBASE_AUTH_EMULATOR_HOST}/identitytoolkit.googleapis.com/v1/accounts:signUp?key=demo-key`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ returnSecureToken: true }),
+        },
+      );
+      const account = (await response.json()) as { idToken: string };
+      for (const name of [
+        "ensurePlayer",
+        "matchmaking",
+        "syncStats",
+        "migrateStats",
+      ]) {
+        const result = await fetch(
+          `http://127.0.0.1:5001/demo-narnigrams/australia-southeast1/${name}`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${account.idToken}`,
+            },
+            body: JSON.stringify({ data: {} }),
+          },
+        );
+        assert.equal(result.status, 401);
+      }
+    });
+    await t.test(
       "real callable auth, generated profile, queue and account deletion",
       async () => {
         await environment.clearFirestore();
@@ -350,7 +537,11 @@ test(
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ returnSecureToken: true }),
+            body: JSON.stringify({
+              email: `test-${Date.now()}@example.com`,
+              password: "test-password-123",
+              returnSecureToken: true,
+            }),
           },
         );
         const account = (await response.json()) as {
@@ -360,7 +551,7 @@ test(
         assert.ok(account.idToken);
         const call = async (name: string, data: unknown) => {
           const result = await fetch(
-            `http://127.0.0.1:5001/narnigrams/australia-southeast1/${name}`,
+            `http://127.0.0.1:5001/demo-narnigrams/australia-southeast1/${name}`,
             {
               method: "POST",
               headers: {

@@ -367,3 +367,52 @@ test("legacy heartbeat-filled replay caches migrate without reopening old board 
     /outside the replay window/,
   );
 });
+
+test("Apple erasure exchanges a code, checks its owner, and revokes the grant", async () => {
+  const { generateKeyPairSync } = await import("node:crypto");
+  const { revokeAppleAuthorization } = await import(
+    "../../functions/src/apple"
+  );
+  const { privateKey } = generateKeyPairSync("ec", { namedCurve: "P-256" });
+  const config = {
+    teamId: "test-team",
+    keyId: "test-key",
+    clientId: "test-app",
+    privateKey: privateKey.export({ type: "pkcs8", format: "pem" }).toString(),
+  };
+  const calls: string[] = [];
+  const idToken = `header.${Buffer.from(JSON.stringify({ sub: "apple-owner", aud: "test-app" })).toString("base64url")}.signature`;
+  const request: typeof fetch = async (url, init) => {
+    calls.push(String(url));
+    const body = init?.body as URLSearchParams;
+    assert.equal(body.get("client_id"), "test-app");
+    if (String(url).endsWith("/token")) {
+      assert.equal(body.get("code"), "test-code");
+      return new Response(
+        JSON.stringify({ id_token: idToken, refresh_token: "test-refresh" }),
+        { status: 200 },
+      );
+    }
+    assert.equal(body.get("token"), "test-refresh");
+    assert.equal(body.get("token_type_hint"), "refresh_token");
+    return new Response(null, { status: 200 });
+  };
+  await revokeAppleAuthorization("test-code", "apple-owner", config, request);
+  assert.deepEqual(calls, [
+    "https://appleid.apple.com/auth/token",
+    "https://appleid.apple.com/auth/revoke",
+  ]);
+  calls.length = 0;
+  await assert.rejects(
+    revokeAppleAuthorization("test-code", "different-owner", config, request),
+  );
+  assert.equal(calls.length, 1);
+  await assert.rejects(
+    revokeAppleAuthorization(
+      "test-code",
+      "apple-owner",
+      config,
+      async () => new Response(null, { status: 400 }),
+    ),
+  );
+});

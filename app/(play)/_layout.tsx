@@ -23,6 +23,7 @@ export default function PlayLayout() {
         name="index"
         options={{ title: "Narnigrams", headerLargeTitle: true }}
       />
+      <Stack.Screen name="account" options={{ title: "Account" }} />
       <Stack.Screen
         name="rank"
         options={{

@@ -12,7 +12,19 @@ export function createAuth(app: FirebaseApp) {
     throw new Error(
       "Firebase native auth requires Metro react-native export resolution.",
     );
-  return FirebaseAuth.initializeAuth(app, {
-    persistence: nativeAuth.getReactNativePersistence(AsyncStorage),
-  });
+  try {
+    return FirebaseAuth.initializeAuth(app, {
+      persistence: nativeAuth.getReactNativePersistence(AsyncStorage),
+    });
+  } catch (e) {
+    // A re-evaluated module (Fast Refresh, duplicate import) reuses the existing
+    // Firebase app, so auth is already initialized. Reuse it instead of failing.
+    if (
+      e instanceof Error &&
+      "code" in e &&
+      (e as { code?: string }).code === "auth/already-initialized"
+    )
+      return FirebaseAuth.getAuth(app);
+    throw e;
+  }
 }

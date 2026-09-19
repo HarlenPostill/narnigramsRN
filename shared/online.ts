@@ -8,6 +8,7 @@ export interface PlayerProfile {
   uid: string;
   displayName: string;
   rating: number;
+  peakRating?: number;
   games: number;
   wins: number;
   losses: number;
@@ -79,10 +80,25 @@ export interface MatchCommand {
 export type Unsubscribe = () => void;
 export interface GameRepositories {
   auth: {
+    signIn(email: string, password: string, create: boolean): Promise<void>;
+    signInApple(): Promise<void>;
+    resetPassword(email: string): Promise<void>;
+    signOut(): Promise<void>;
     ensurePlayer(): Promise<PlayerProfile>;
     currentUid(): string | null;
     watchAuth(next: (uid: string | null) => void): Unsubscribe;
     deleteAccount(): Promise<void>;
+  };
+  stats: {
+    migrate(
+      id: string,
+      stats: import("../types/game").GameStats,
+    ): Promise<void>;
+    sync(records: import("../types/game").GameRecord[]): Promise<void>;
+    watch(
+      next: (stats: import("../types/game").GameStats | null) => void,
+      error: (error: Error) => void,
+    ): Unsubscribe;
   };
   profiles: {
     get(): Promise<PlayerProfile | null>;

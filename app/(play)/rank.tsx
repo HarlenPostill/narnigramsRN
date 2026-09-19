@@ -11,10 +11,9 @@ export default function RankScreen() {
   const { player, refreshPlayer } = useAuth();
 
   const elo = player?.rating ?? 800;
-  const peakElo = elo;
+  const peakElo = player?.peakRating ?? elo;
   const wins = player?.wins ?? 0;
-  const losses = player?.losses ?? 0;
-  const totalGames = wins + losses;
+  const totalGames = player?.games ?? 0;
   const winRate = totalGames > 0 ? Math.round((wins / totalGames) * 100) : 0;
   const rank = getRank(elo);
 
@@ -45,7 +44,7 @@ export default function RankScreen() {
 
       <View style={{ gap: 12, flexDirection: "row", alignItems: "center" }}>
         <StatsCard
-          title="Current Rating"
+          title="Peak Rating"
           value={String(peakElo)}
           icon="mountain.2.fill"
           iconColor={colors.textSecondary}

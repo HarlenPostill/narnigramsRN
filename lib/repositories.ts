@@ -1,8 +1,14 @@
+import { signInApple, revokeApple } from "./apple-sign-in";
 import { getApps, initializeApp } from "firebase/app";
 import {
   connectAuthEmulator,
   onAuthStateChanged,
-  signInAnonymously,
+  onIdTokenChanged,
+  createUserWithEmailAndPassword,
+  EmailAuthProvider,
+  linkWithCredential,
+  signInWithEmailAndPassword,
+  sendPasswordResetEmail,
   signOut,
 } from "firebase/auth";
 import {
@@ -69,8 +75,8 @@ export function getRepositories(): GameRepositories {
     connectFunctionsEmulator(functions, emulatorHost, 5001);
   }
   const uid = () => {
-    if (!auth.currentUser)
-      throw new Error("Open Ranked to create your anonymous player first.");
+    if (!auth.currentUser || auth.currentUser.isAnonymous)
+      throw new Error("Sign in to play Ranked.");
     return auth.currentUser.uid;
   };
   const call = async <T>(name: string, data: unknown): Promise<T> =>
@@ -84,30 +90,83 @@ export function getRepositories(): GameRepositories {
     });
   repositories = {
     auth: {
-      currentUid: () => auth.currentUser?.uid ?? null,
-      watchAuth: (next) =>
-        onAuthStateChanged(auth, (user) => next(user?.uid ?? null)),
+      currentUid: () =>
+        auth.currentUser && !auth.currentUser.isAnonymous
+          ? auth.currentUser.uid
+          : null,
+      watchAuth: (next) => {
+        let previous: string | null | undefined;
+        return onIdTokenChanged(auth, (user) => {
+          const id = user && !user.isAnonymous ? user.uid : null;
+          if (id !== previous) {
+            previous = id;
+            next(id);
+          }
+        });
+      },
+      signIn: async (email, password, create) => {
+        await auth.authStateReady();
+        if (create && auth.currentUser?.isAnonymous) {
+          await linkWithCredential(
+            auth.currentUser,
+            EmailAuthProvider.credential(email.trim(), password),
+          );
+        } else if (create)
+          await createUserWithEmailAndPassword(auth, email.trim(), password);
+        else await signInWithEmailAndPassword(auth, email.trim(), password);
+        await auth.currentUser!.getIdToken(true);
+      },
+      signInApple: async () => {
+        await auth.authStateReady();
+        await signInApple(auth);
+        await auth.currentUser!.getIdToken(true);
+      },
+      resetPassword: (email) => sendPasswordResetEmail(auth, email.trim()),
+      signOut: () => signOut(auth),
       ensurePlayer: async () => {
         await auth.authStateReady();
-        if (!auth.currentUser) await signInAnonymously(auth);
+        uid();
         return call<PlayerProfile>("ensurePlayer", {});
       },
       deleteAccount: async () => {
+        await revokeApple(auth, (code) => call("revokeApple", { code }));
         await call("deleteAccount", {});
         await signOut(auth);
       },
     },
+    stats: {
+      migrate: (id, stats) => call("migrateStats", { id, stats }),
+      sync: (records) => call("syncStats", { records }),
+      watch: (next, error) =>
+        onSnapshot(
+          doc(db, "accountStats", uid()),
+          { includeMetadataChanges: true },
+          (snap) => {
+            if (!snap.exists() && snap.metadata.fromCache) return;
+            next(
+              snap.exists()
+                ? (snap.data() as import("../types/game").GameStats)
+                : null,
+            );
+          },
+          error,
+        ),
+    },
     profiles: {
       get: async () => {
         await auth.authStateReady();
-        if (!auth.currentUser) return null;
+        if (!auth.currentUser || auth.currentUser.isAnonymous) return null;
         const snap = await getDoc(doc(db, "players", uid()));
         return snap.exists() ? (snap.data() as PlayerProfile) : null;
       },
       watch: (next, error) =>
         onSnapshot(
           doc(db, "players", uid()),
-          (snap) => next(snap.exists() ? (snap.data() as PlayerProfile) : null),
+          { includeMetadataChanges: true },
+          (snap) => {
+            if (!snap.exists() && snap.metadata.fromCache) return;
+            next(snap.exists() ? (snap.data() as PlayerProfile) : null);
+          },
           error,
         ),
     },
@@ -129,7 +188,7 @@ export function getRepositories(): GameRepositories {
           auth,
           (user) => {
             stopSession?.();
-            if (!user) {
+            if (!user || user.isAnonymous) {
               error(new Error("Open Ranked to reconnect to your player."));
               return;
             }

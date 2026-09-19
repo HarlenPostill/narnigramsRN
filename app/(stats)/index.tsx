@@ -1,19 +1,20 @@
+import { useGameStats } from "@/hooks/use-game-stats";
 import { ScrollView, View, Text } from "react-native";
 import { PlatformColor } from "@/utils/platform-color";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { Image } from "expo-image";
-import { useStorage } from "@/hooks/use-storage";
+import { useAuth } from "@/hooks/use-auth";
 import { useColors } from "@/hooks/use-colors";
 import { StatsCard } from "@/components/stats/stats-card";
 import { StreakChart } from "@/components/stats/streak-chart";
 import { formatTime } from "@/hooks/use-timer";
-import { EMPTY_STATS, type GameStats } from "@/types/game";
 
 export default function StatsScreen() {
-  const [stats] = useStorage<GameStats>("game-stats", EMPTY_STATS);
+  const stats = useGameStats();
   const colors = useColors();
+  const { player, error } = useAuth();
 
-  if (stats.totalGames === 0) {
+  if (stats.totalGames === 0 && !player?.games) {
     return (
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
@@ -59,7 +60,8 @@ export default function StatsScreen() {
 
   const avgTime =
     stats.records.length > 0
-      ? stats.records.reduce((s, r) => s + r.durationMs, 0) / stats.records.length
+      ? stats.records.reduce((s, r) => s + r.durationMs, 0) /
+        stats.records.length
       : 0;
 
   return (
@@ -67,12 +69,31 @@ export default function StatsScreen() {
       contentInsetAdjustmentBehavior="automatic"
       contentContainerStyle={{ padding: 20, gap: 16 }}
     >
+      {error ? (
+        <Text
+          accessibilityLiveRegion="polite"
+          style={{ color: colors.textSecondary }}
+        >
+          {error}
+        </Text>
+      ) : null}
+      {player ? (
+        <View style={{ flexDirection: "row", gap: 12 }}>
+          <StatsCard title="Ranked games" value={String(player.games)} />
+          <StatsCard title="Ranked wins" value={String(player.wins)} />
+          <StatsCard title="Rating" value={String(player.rating)} />
+        </View>
+      ) : null}
       <Animated.View
         entering={FadeInDown.duration(400)}
         style={{ flexDirection: "row", gap: 12 }}
       >
-        <StatsCard title="Games" value={String(stats.totalGames)} />
-        <StatsCard title="Wins" value={String(stats.totalWins)} subtitle={`${winRate}%`} />
+        <StatsCard title="Solo / Practice" value={String(stats.totalGames)} />
+        <StatsCard
+          title="Wins"
+          value={String(stats.totalWins)}
+          subtitle={`${winRate}%`}
+        />
       </Animated.View>
 
       <Animated.View
@@ -119,7 +140,12 @@ export default function StatsScreen() {
                   justifyContent: "space-between",
                 }}
               >
-                <Text style={{ fontSize: 15, color: PlatformColor("secondaryLabel") }}>
+                <Text
+                  style={{
+                    fontSize: 15,
+                    color: PlatformColor("secondaryLabel"),
+                  }}
+                >
                   {mode.replace("-", " · ")}
                 </Text>
                 <Text

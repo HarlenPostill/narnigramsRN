@@ -6,7 +6,7 @@ Narnigrams is an iPhone-first word-tile game built with Expo, React Native and T
 - **Practice:** Easy, Medium or Hard deterministic AI using real tiles from the shared pool.
 - **Ranked Online:** Firebase-backed human matchmaking and server-settled ELO. After 10 seconds without a human match, the server offers a clearly identified, unranked AI fallback.
 
-Solo and Practice work without sign-in. Ranked creates an anonymous identity on demand and uses generated names. No payments, ads, analytics, tracking or chat are included.
+Solo and Practice work without sign-in. Ranked requires Apple or email/password sign-in and uses generated names. Ratings and stats belong to the account. No payments, ads, analytics, tracking or chat are included.
 
 ## Development
 
@@ -39,6 +39,6 @@ Production iOS builds are archived and uploaded manually through Xcode. The owne
 - [Dependency security](docs/DEPENDENCY_SECURITY.md): compatible updates, URI decoder backport and remaining tooling advisories.
 - [Asset provenance](docs/ASSET_PROVENANCE.md): pinned licensed ESDB dictionary, reproduction and remaining artwork rights checks.
 
-Pure game and rating logic lives in `utils/`; online contracts in `shared/`; client repository adapters in `lib/`; authoritative Functions in `functions/src/`. Firestore denies client writes and private opponent-state reads. Local bot wins never alter public ELO. Server validation does not prevent external solvers, collusion or repeated anonymous accounts.
+Pure game and rating logic lives in `utils/`; online contracts in `shared/`; client repository adapters in `lib/`; authoritative Functions in `functions/src/`. Firestore denies client writes and private opponent-state reads. Local bot wins never alter public ELO. Server validation does not prevent external solvers, collusion or repeated accounts.
 
 **Credential action required:** the old tracked `.env` was untracked and preserved locally, but its Supabase values remain in git history. Rotate/revoke those credentials and review the old service's access. Determine whether existing production players need an owner-controlled migration before retiring Supabase. No git-history rewrite or production-data deletion has been performed.

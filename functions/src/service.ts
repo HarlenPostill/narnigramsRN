@@ -1,3 +1,5 @@
+import { addRecord, emptyStats, validOfflineRecord } from "../../shared/stats";
+import type { GameStats } from "../../types/game";
 import { randomUUID, createHash } from "node:crypto";
 import { getAuth } from "firebase-admin/auth";
 import {
@@ -35,6 +37,110 @@ export class GameService {
     private dictionary: Set<string>,
     private clock: () => number = Date.now,
   ) {}
+  async migrateStats(uid: string, id: unknown, value: unknown) {
+    const stats = value as GameStats;
+    if (
+      typeof id !== "string" ||
+      !/^[a-zA-Z0-9_-]{1,180}$/.test(id) ||
+      !stats ||
+      ![
+        stats.totalGames,
+        stats.totalWins,
+        stats.currentStreak,
+        stats.bestStreak,
+      ].every((n) => Number.isSafeInteger(n) && n >= 0 && n <= 10000000) ||
+      stats.totalWins > stats.totalGames ||
+      !stats.bestTimes ||
+      typeof stats.bestTimes !== "object" ||
+      !Array.isArray(stats.records) ||
+      stats.records.length !== 0 ||
+      Object.entries(stats.bestTimes).some(
+        ([key, n]) =>
+          !/^(easy|standard|hard)-(50|72|100)$/.test(key) ||
+          !Number.isFinite(n) ||
+          n! < 0,
+      )
+    )
+      throw new DomainError("invalid-argument", "Invalid legacy stats.");
+    for (const mode of ["solo", "bot"] as const) {
+      const count = stats.byMode?.[mode];
+      if (
+        count &&
+        (![count.games, count.wins].every(
+          (n) => Number.isSafeInteger(n) && n >= 0 && n <= stats.totalGames,
+        ) ||
+          count.wins > count.games)
+      )
+        throw new DomainError(
+          "invalid-argument",
+          "Invalid legacy mode counts.",
+        );
+    }
+    await this.db.runTransaction(async (tx) => {
+      const ref = this.db.doc(`accountStats/${uid}`);
+      const receipt = ref.collection("migrations").doc(id);
+      const [profile, current, imported] = await tx.getAll(
+        this.db.doc(`players/${uid}`),
+        ref,
+        receipt,
+      );
+      if (!profile.exists || profile.get("deleting"))
+        throw new DomainError("failed-precondition", "Account unavailable.");
+      if (imported.exists) return;
+      const merged = current.exists
+        ? (current.data() as GameStats)
+        : emptyStats();
+      merged.totalGames += stats.totalGames;
+      merged.totalWins += stats.totalWins;
+      for (const mode of ["solo", "bot"] as const) {
+        const count = stats.byMode?.[mode];
+        if (count) {
+          const old = merged.byMode?.[mode] ?? { games: 0, wins: 0 };
+          merged.byMode = {
+            ...merged.byMode,
+            [mode]: {
+              games: old.games + count.games,
+              wins: old.wins + count.wins,
+            },
+          };
+        }
+      }
+      merged.bestStreak = Math.max(merged.bestStreak, stats.bestStreak);
+      if (!current.exists) merged.currentStreak = stats.currentStreak;
+      for (const [key, n] of Object.entries(stats.bestTimes)) {
+        const k = key as keyof GameStats["bestTimes"];
+        merged.bestTimes[k] = Math.min(merged.bestTimes[k] ?? Infinity, n!);
+      }
+      tx.set(ref, merged);
+      tx.create(receipt, { imported: true });
+    });
+  }
+  async syncStats(uid: string, records: unknown) {
+    if (
+      !Array.isArray(records) ||
+      records.length > 100 ||
+      !records.every(validOfflineRecord)
+    )
+      throw new DomainError("invalid-argument", "Invalid game records.");
+    await this.db.runTransaction(async (tx) => {
+      const profile = await tx.get(this.db.doc(`players/${uid}`));
+      if (!profile.exists || profile.get("deleting"))
+        throw new DomainError("failed-precondition", "Account unavailable.");
+      const ref = this.db.doc(`accountStats/${uid}`);
+      const current = await tx.get(ref);
+      const unique = [...new Map(records.map((r) => [r.id, r])).values()];
+      const refs = unique.map((r) => ref.collection("receipts").doc(r.id));
+      const receipts = refs.length ? await tx.getAll(...refs) : [];
+      let stats = current.exists ? (current.data() as GameStats) : emptyStats();
+      unique.forEach((record, index) => {
+        if (!receipts[index].exists) {
+          stats = addRecord(stats, record);
+          tx.create(refs[index], { imported: true });
+        }
+      });
+      tx.set(ref, stats);
+    });
+  }
   async ensurePlayer(uid: string): Promise<PlayerProfile> {
     return this.db.runTransaction(async (tx) => {
       const ref = this.db.doc(`players/${uid}`);
@@ -300,6 +406,7 @@ export class GameService {
         tx.update(refs[i], {
           activeMatchId: null,
           rating: audit.postRating,
+          peakRating: Math.max(p.peakRating ?? p.rating, audit.postRating),
           games: p.games + (reason === "abandoned" ? 0 : 1),
           wins: p.wins + (winnerId === uid ? 1 : 0),
           losses: p.losses + (winnerId !== null && winnerId !== uid ? 1 : 0),
@@ -427,6 +534,7 @@ export class GameService {
       await batch.commit();
     }
     try {
+      await this.db.recursiveDelete(this.db.doc(`accountStats/${uid}`));
       await getAuth().deleteUser(uid);
     } catch (error) {
       if ((error as { code?: string }).code !== "auth/user-not-found")

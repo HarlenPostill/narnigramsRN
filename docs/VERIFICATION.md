@@ -51,4 +51,12 @@ A simulator build is not a signed physical-device/App Store acceptance result. N
 - Publish operator-owned privacy/support URLs, complete App Store privacy/metadata/signing, confirm artwork rights, and perform the [App Review checklist](APP_REVIEW.md).
 - Rotate/revoke historical Supabase credentials and decide whether existing production data requires migration. No destructive history rewrite or production-data deletion was performed.
 
-Remaining anti-cheat limitations include external solvers, collusion and repeated anonymous accounts. Server-owned settlement prevents impossible tile ownership and direct client rating writes; it does not establish that decisions were made by a human.
+Remaining anti-cheat limitations include external solvers, collusion and repeated accounts. Server-owned settlement prevents impossible tile ownership and direct client rating writes; it does not establish that decisions were made by a human.
+
+## Account system update — 19 September 2026
+
+- `npm run check`: passed (40 domain tests, 14 backend tests, TypeScript and Functions build); lint has ten existing root-layout import-order warnings.
+- Firebase Auth/Firestore/Functions emulators under Java 21: passed security, queue races, stats import idempotency/isolation/deletion, anonymous rejection, persistent UID upgrade and email restoration tests. The emulator project is now consistently `demo-narnigrams`.
+- Web and iOS JavaScript exports: passed. Browser inspection verified the Ranked account gate, email creation mode and return to guest play.
+- Native Apple sign-in uses a SHA-256 nonce; native deletion reauthenticates and exchanges/revokes the Apple grant through a secret-backed callable. Mocked exchange tests verify matching ownership, revocation and rejection paths. These do not replace a live Apple device test.
+- Production provider settings, the Apple revocation secret, backend deployment, native rebuild/signing and real-device Apple sign-in/revocation remain operator release steps. No production deployment was performed.

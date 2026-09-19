@@ -8,7 +8,7 @@ Narnigrams is an iPhone-first Expo/React Native app. The web bundle is a develop
 | --- | --- | --- |
 | Solo | Short 50 / Medium 72 / Long 100 tiles; starts with 11 / 15 / 21 | Local only; no public rating |
 | Practice | Easy / Medium / Hard bot with real tiles, deterministic seeded decisions and shared pool | Local only; no public rating |
-| Ranked human | 72 tiles, 15 each, standard distribution, versioned dictionary/rules | Anonymous Firebase identity; server-settled public ELO |
+| Ranked human | 72 tiles, 15 each, standard distribution, versioned dictionary/rules | Apple or email/password account; server-settled public ELO |
 | Ranked AI fallback | After server queue deadline; seeded Practice engine, skill mapped to rating | Explicit AI label; unranked; no public ELO mutation |
 
 Game length, letter-distribution difficulty, timer and bot difficulty are separate concepts. A shared seeded pool has stable tile IDs. Offline pools use a replayable seed/index; online server pools derive opaque IDs and order with SHA-256 from a private random seed, so a dealt ID does not reveal the remaining pool. The engine, bot and ELO modules in `utils/` are pure domain code shared with the server where appropriate. `types/game.ts` models local play; `shared/online.ts` defines versioned online commands and repository contracts.
@@ -39,6 +39,6 @@ Server-generated display names replace arbitrary usernames. Names are identifier
 
 ## Remaining trust limits
 
-The server prevents client-written ratings, impossible ownership and invalid wins. It cannot detect a player using a solver, screen automation, colluding accounts or multiple anonymous accounts. Generated names do not prevent account-reset abuse. Account creation and callable traffic require service quotas, monitoring and rate-limit review; `maxInstances` is a capacity bound, not a per-user anti-abuse policy. No proof of human decision-making is claimed.
+The server prevents client-written ratings, impossible ownership and invalid wins. It cannot detect a player using a solver, screen automation, colluding accounts or multiple accounts. Generated names do not prevent account-reset abuse. Account creation and callable traffic require service quotas, monitoring and rate-limit review; `maxInstances` is a capacity bound, not a per-user anti-abuse policy. No proof of human decision-making is claimed.
 
 The JavaScript Firebase SDK supports shared web/native development without adding native Firebase packages. See [FIREBASE.md](FIREBASE.md) for the required production integration and console work.

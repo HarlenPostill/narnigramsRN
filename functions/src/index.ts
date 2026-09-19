@@ -1,3 +1,5 @@
+import { defineSecret } from "firebase-functions/params";
+import { revokeAppleAuthorization, type AppleConfig } from "./apple";
 import { initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
@@ -17,8 +19,18 @@ const dictionary = new Set(
 );
 const service = new GameService(getFirestore(), dictionary);
 const options = { region: "australia-southeast1", maxInstances: 10 };
-function uid(auth: { uid: string } | undefined) {
-  if (!auth) throw new HttpsError("unauthenticated", "Open Ranked to sign in.");
+function uid(
+  auth:
+    | { uid: string; token: { firebase?: { sign_in_provider?: string } } }
+    | undefined,
+) {
+  if (
+    !auth ||
+    !["password", "apple.com"].includes(
+      auth.token.firebase?.sign_in_provider ?? "",
+    )
+  )
+    throw new HttpsError("unauthenticated", "Open Ranked to sign in.");
   return auth.uid;
 }
 async function safe<T>(work: () => Promise<T>) {
@@ -69,6 +81,65 @@ export const deleteAccount = onCall(options, (request) =>
   safe(() => service.deleteAccount(uid(request.auth))),
 );
 export const cleanup = onSchedule(
-  { schedule: "every 15 minutes", region: "australia-southeast1", maxInstances: 1 },
+  {
+    schedule: "every 15 minutes",
+    region: "australia-southeast1",
+    maxInstances: 1,
+  },
   () => service.cleanup(),
+);
+
+export const syncStats = onCall(options, (request) =>
+  safe(() => service.syncStats(uid(request.auth), request.data?.records)),
+);
+
+export const migrateStats = onCall(options, (request) =>
+  safe(() =>
+    service.migrateStats(
+      uid(request.auth),
+      request.data?.id,
+      request.data?.stats,
+    ),
+  ),
+);
+
+const appleConfig = defineSecret("APPLE_SIGN_IN_CONFIG");
+export const revokeApple = onCall(
+  { ...options, secrets: [appleConfig] },
+  (request) =>
+    safe(async () => {
+      const playerId = uid(request.auth);
+      const code = request.data?.code;
+      if (typeof code !== "string" || code.length < 1 || code.length > 4096)
+        throw new HttpsError(
+          "invalid-argument",
+          "Apple authorization code required.",
+        );
+      const user = await getAuth().getUser(playerId);
+      const apple = user.providerData.find(
+        (provider) => provider.providerId === "apple.com",
+      );
+      if (!apple)
+        throw new HttpsError(
+          "failed-precondition",
+          "No Apple account is linked.",
+        );
+      let config: AppleConfig;
+      try {
+        config = JSON.parse(appleConfig.value());
+        if (
+          !config.teamId ||
+          !config.keyId ||
+          !config.privateKey ||
+          !config.clientId
+        )
+          throw new Error();
+      } catch {
+        throw new HttpsError(
+          "failed-precondition",
+          "Apple account deletion is not configured. Contact support.",
+        );
+      }
+      await revokeAppleAuthorization(code, apple.uid, config);
+    }),
 );

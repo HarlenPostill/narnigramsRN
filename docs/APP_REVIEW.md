@@ -15,11 +15,11 @@ Audit baseline: `57f2c97`; implementation review dated 19 September 2026. This r
 | **Addressed — 5.2** unknown dictionary rights | Replaced original unexplained 279,496-word list with pinned ESDB list; `assets/wordlist-notice.json`, `docs/licenses/ESDB-Copyright.txt`, reproducible generator | Confirm notices are accessible in Settings and retained in Functions distribution. Review vocabulary policy/age-rating; upstream offensive-word tags are incomplete. |
 | **High operational risk — 1.6** historical credentials | `.env` removed from index; local contents preserved; ignore patterns/example added | Rotate/revoke old Supabase credentials, review old access, and decide existing-player migration before retiring the service. Historical git copies still exist. |
 | **Tracked dependency risk — 1.6** | Compatible transitive updates and tested URI-parser security backport; `docs/DEPENDENCY_SECURITY.md` | Audit still reports build-tool advisories and the version-only decoder alert. Reassess the release lockfile; do not claim a zero-advisory audit. |
-| **Residual anti-cheat risk** local automation/collusion | Server validates final board, ownership/sequence and idempotent settlement | Automated solvers, multiple anonymous accounts and collusion are not prevented. Validate abuse controls and monitor anomalies; do not market cheating as impossible. |
+| **Residual anti-cheat risk** local automation/collusion | Server validates final board, ownership/sequence and idempotent settlement | Automated solvers, multiple accounts and collusion are not prevented. Validate abuse controls and monitor anomalies; do not market cheating as impossible. |
 
 `ios.supportsTablet: false` is retained deliberately: this is an iPhone-first portrait game with dense tile controls, and no tablet-specific redesign has been verified. It does not excuse broken iPad compatibility behavior. Test the submitted iPhone build in iPad compatibility mode and record screenshots; only enable native tablet support after layout/interaction validation.
 
-No purchases, subscriptions, advertising, tracking SDK, chat or third-party social-login button is introduced. Anonymous Firebase authentication does not itself require a Sign in with Apple button. Revisit login guideline 4.8 if social login is later added. Do not add unnecessary permission strings or ATT prompts for features that do not collect those data.
+No purchases, subscriptions, advertising, tracking SDK or chat is introduced. Ranked supports Sign in with Apple and email/password accounts. Verify both sign-in paths and the account deletion flow in the signed release build. Do not add unnecessary permission strings or ATT prompts for features that do not collect those data.
 
 ## Manual acceptance matrix
 
@@ -48,13 +48,13 @@ Run against the exact signed build and a non-production staging Firebase project
 - Review resolved Info.plist/privacy manifests and required-reason APIs from the actual native dependency build. Set the export-compliance answer based on the actual binary and applicable encryption use, not an unverified repository flag.
 - Upload real in-app screenshots (not only splash art) for required device sizes. Describe Solo, Practice and Ranked accurately; no competitor trademarks or implied affiliation. Supply category, copyright/owner, support and privacy URLs.
 - Complete the current age-rating questionnaire truthfully. There is no chat, social feed, gambling, prize, ad or payment feature; the English vocabulary is not a guarantee of child suitability. Assess actual content and avoid unsupported “for kids” claims. Confirm current regional requirements in App Store Connect.
-- Keep Firebase backend online for review and provide a reachable review contact. Test anonymous auth, policy links and deletion from a clean install on the production configuration.
+- Keep Firebase backend online for review and provide a reachable review contact. Test Apple and email/password auth, policy links and deletion from a clean install on the production configuration.
 
 ## Reviewer notes template
 
 Replace the bracketed operator fields before submission. These are notes for App Review, not app-facing placeholder copy.
 
-> Narnigrams is a word-tile game with Solo, Practice against AI, and Ranked Online. Solo and Practice work offline and require no account. Opening Ranked creates an anonymous player identity automatically; there is no email/password sign-in or purchase.
+> Narnigrams is a word-tile game with Solo, Practice against AI, and Ranked Online. Solo and Practice work offline and require no account. Ranked requires Sign in with Apple or email/password account creation. Solo and Practice require no account. There are no purchases.
 >
 > To test offline play, open Play and choose Solo Short/Medium/Long or Practice Easy/Medium/Hard. To test online play, open Ranked on two independently installed devices. Compatible human players are paired by rating. If no human is secured after 10 seconds, the app identifies an AI fallback; that match does not affect public rating. Only human results affect ranked ELO.
 >

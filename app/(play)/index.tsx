@@ -1,10 +1,11 @@
+import { useGameStats } from "@/hooks/use-game-stats";
 import { ActionButton } from "@/components/home/action-button";
 import { StatsCard } from "@/components/stats/stats-card";
 import { useAuth } from "@/hooks/use-auth";
 import { useColors } from "@/hooks/use-colors";
 import { useStorage } from "@/hooks/use-storage";
-import type { GameSettings, GameState, GameStats } from "@/types/game";
-import { DEFAULT_SETTINGS, EMPTY_STATS } from "@/types/game";
+import type { GameSettings, GameState } from "@/types/game";
+import { DEFAULT_SETTINGS } from "@/types/game";
 import { useRouter } from "expo-router";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
@@ -60,7 +61,7 @@ export default function HomeScreen() {
   const { push } = useRouter();
   const colors = useColors();
   const { player } = useAuth();
-  const [stats] = useStorage<GameStats>("game-stats", EMPTY_STATS);
+  const stats = useGameStats();
 
   const [settings, setSettings] = useStorage<GameSettings>(
     "settings",
@@ -68,8 +69,9 @@ export default function HomeScreen() {
   );
   const [savedGame] = useStorage<GameState | null>("current-game", null);
 
-  const hasSavedGame =
-    Boolean(savedGame && savedGame.startedAt > 0 && !savedGame.isComplete);
+  const hasSavedGame = Boolean(
+    savedGame && savedGame.startedAt > 0 && !savedGame.isComplete,
+  );
 
   const startWithPreset = (preset: Partial<GameSettings>) => {
     setSettings({ ...settings, ...preset });
@@ -88,10 +90,7 @@ export default function HomeScreen() {
           icon="flame.fill"
           iconColor="#E96812"
         />
-        <Pressable
-          style={{ flexGrow: 1 }}
-          onPress={() => push("/rank")}
-        >
+        <Pressable style={{ flexGrow: 1 }} onPress={() => push("/rank")}>
           <StatsCard
             hasInfo
             title="Rating"
@@ -147,7 +146,9 @@ export default function HomeScreen() {
             <PresetCard
               key={preset.label}
               label={preset.label}
-              onPress={() => startWithPreset({ ...preset.settings, gameMode: "solo" })}
+              onPress={() =>
+                startWithPreset({ ...preset.settings, gameMode: "solo" })
+              }
               delay={200 + i * 80}
               colors={colors}
             />
@@ -174,14 +175,25 @@ export default function HomeScreen() {
             <PresetCard
               key={preset}
               label={preset.charAt(0).toUpperCase() + preset.slice(1)}
-              onPress={() => startWithPreset({ gameMode: "bot", botDifficulty: preset, poolSize: 72, handSize: 15 })}
+              onPress={() =>
+                startWithPreset({
+                  gameMode: "bot",
+                  botDifficulty: preset,
+                  poolSize: 72,
+                  handSize: 15,
+                })
+              }
               delay={200 + i * 80}
               colors={colors}
             />
           ))}
         </View>
       </View>
-      <Text style={{ color: colors.textSecondary }}>Arrange every tile into connected words. Drag a tile to the bin to exchange it for two. Empty your hand to peel; finish when no shared draw remains. Letter mix and timer are set separately in Settings.</Text>
+      <Text style={{ color: colors.textSecondary }}>
+        Arrange every tile into connected words. Drag a tile to the bin to
+        exchange it for two. Empty your hand to peel; finish when no shared draw
+        remains. Letter mix and timer are set separately in Settings.
+      </Text>
     </ScrollView>
   );
 }
