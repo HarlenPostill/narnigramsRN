@@ -1,10 +1,10 @@
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
 import { initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
 import { HttpsError, onCall } from "firebase-functions/v2/https";
 import { onSchedule } from "firebase-functions/v2/scheduler";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { ONLINE_PROTOCOL } from "../../shared/online";
 import { DomainError } from "./domain";
 import { GameService } from "./service";
@@ -16,8 +16,7 @@ const dictionary = new Set(
     .filter(Boolean),
 );
 const service = new GameService(getFirestore(), dictionary);
-const enforceAppCheck = process.env.ENFORCE_APP_CHECK === "true";
-const options = { region: "us-central1", maxInstances: 10, enforceAppCheck };
+const options = { region: "australia-southeast1", maxInstances: 10 };
 function uid(auth: { uid: string } | undefined) {
   if (!auth) throw new HttpsError("unauthenticated", "Open Ranked to sign in.");
   return auth.uid;
@@ -70,6 +69,6 @@ export const deleteAccount = onCall(options, (request) =>
   safe(() => service.deleteAccount(uid(request.auth))),
 );
 export const cleanup = onSchedule(
-  { schedule: "every 15 minutes", region: "us-central1", maxInstances: 1 },
+  { schedule: "every 15 minutes", region: "australia-southeast1", maxInstances: 1 },
   () => service.cleanup(),
 );

@@ -1,1 +1,6 @@
-{"projects":{"default":"demo-narnigrams"}}
+{
+  "projects": {
+    "default": "demo-narnigrams",
+    "production": "narms-7c6bc"
+  }
+}

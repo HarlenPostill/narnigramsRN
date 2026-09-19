@@ -39,6 +39,6 @@ Server-generated display names replace arbitrary usernames. Names are identifier
 
 ## Remaining trust limits
 
-The server prevents client-written ratings, impossible ownership and invalid wins. It cannot detect a player using a solver, screen automation, colluding accounts or multiple anonymous accounts. Generated names do not prevent account-reset abuse. Account creation and callable traffic need production App Check, service quotas, monitoring and rate-limit review; `maxInstances` is a capacity bound, not a per-user anti-abuse policy. No proof of human decision-making is claimed.
+The server prevents client-written ratings, impossible ownership and invalid wins. It cannot detect a player using a solver, screen automation, colluding accounts or multiple anonymous accounts. Generated names do not prevent account-reset abuse. Account creation and callable traffic require service quotas, monitoring and rate-limit review; `maxInstances` is a capacity bound, not a per-user anti-abuse policy. No proof of human decision-making is claimed.
 
-The JavaScript Firebase SDK supports shared web/native development without adding native Firebase packages. Native App Check attestation is not implemented by a reCAPTCHA web key. See [FIREBASE.md](FIREBASE.md) for the required production integration and console work.
+The JavaScript Firebase SDK supports shared web/native development without adding native Firebase packages. See [FIREBASE.md](FIREBASE.md) for the required production integration and console work.

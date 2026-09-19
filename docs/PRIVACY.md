@@ -15,7 +15,6 @@ Solo and Practice run locally without creating a Firebase account. Local setting
 | Player hand and board | Private Firestore records; respective player and server only | Validate tile ownership and legal finish | Gameplay content, linked; app functionality |
 | Match seed and remaining tile pool | Server-private state | Deal and conserve tiles without exposing future draws | Gameplay data; app functionality |
 | Operational request/network logs | Google-managed service logging; authorized operators | Reliability, abuse/security investigation | Inspect enabled products/log fields and retention before completing diagnostics categories |
-| App Check attestation | Provider/Firebase, when configured | Abuse prevention | Reassess actual native/web provider data at release |
 | Local settings, saves and statistics | Device/browser only | Offline play and resume | Data exclusively processed on-device is not developer collection; verify backups separately |
 | Support correspondence | Operator's chosen support service, if player contacts it | Resolve a request | Add the actual provider, data fields and retention to the published policy |
 

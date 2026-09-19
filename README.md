@@ -27,7 +27,7 @@ Firebase identifiers are public client configuration, not permission to access d
 
 `npm run check` runs lint, typecheck, deterministic engine/backend tests and the Functions build. `npm run test:emulators` runs Firebase rules/callable/concurrency checks; `npm run check:ci` combines both. CI installs both lockfiles and runs the checks with a demo Firebase project. Run Expo diagnostics and a web export as well; record real iOS release/device QA using [App Review checklist](docs/APP_REVIEW.md).
 
-`eas.json` provides simulator, internal preview and production profiles. The owner must configure Expo/Apple project identities, signing and production environment values. Production Firebase deployment, privacy/support pages, App Privacy entries, artwork ownership confirmation and native App Check integration remain explicit release prerequisites. No live backend, support page or privacy-policy URL is fabricated here.
+Production iOS builds are archived and uploaded manually through Xcode. The owner must configure the Apple team, signing and an ignored root `.env.local` containing the production public Firebase identifiers before archiving. Production Firebase deployment, privacy/support pages, App Privacy entries and artwork ownership confirmation remain explicit release prerequisites. No live backend, support page or privacy-policy URL is fabricated here.
 
 ## Code and decisions
 

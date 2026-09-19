@@ -18,12 +18,6 @@ import {
   httpsCallable,
 } from "firebase/functions";
 import {
-  initializeAppCheck,
-  ReCaptchaEnterpriseProvider,
-} from "firebase/app-check";
-import { Platform } from "react-native";
-import { createAuth } from "./firebase-auth";
-import {
   ONLINE_PROTOCOL,
   ONLINE_RULESET,
   type GameRepositories,
@@ -34,6 +28,7 @@ import {
   type PublicMatch,
   type QueueTicket,
 } from "../shared/online";
+import { createAuth } from "./firebase-auth";
 
 // Expo replaces only statically spelled EXPO_PUBLIC accesses.
 const configuration = {
@@ -56,23 +51,11 @@ export function getRepositories(): GameRepositories {
       "Ranked is not configured. Set the Firebase values from .env.example, then restart Expo. Solo and Practice work offline.",
     );
   const app = getApps()[0] ?? initializeApp(configuration);
-  if (
-    !emulatorHost &&
-    Platform.OS === "web" &&
-    process.env.EXPO_PUBLIC_FIREBASE_APP_CHECK_SITE_KEY
-  ) {
-    initializeAppCheck(app, {
-      provider: new ReCaptchaEnterpriseProvider(
-        process.env.EXPO_PUBLIC_FIREBASE_APP_CHECK_SITE_KEY,
-      ),
-      isTokenAutoRefreshEnabled: true,
-    });
-  }
   const auth = createAuth(app);
   const db = getFirestore(app);
   const functions = getFunctions(
     app,
-    process.env.EXPO_PUBLIC_FIREBASE_FUNCTIONS_REGION || "us-central1",
+    process.env.EXPO_PUBLIC_FIREBASE_FUNCTIONS_REGION || "australia-southeast1",
   );
   if (emulatorHost) {
     if (!configuration.projectId?.startsWith("demo-"))

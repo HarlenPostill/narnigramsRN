@@ -1,25 +1,25 @@
-import test, { before, after } from "node:test";
+import {
+    assertFails,
+    assertSucceeds,
+    initializeTestEnvironment,
+    type RulesTestEnvironment,
+} from "@firebase/rules-unit-testing";
+import { collection, doc, getDoc, getDocs, setDoc } from "firebase/firestore";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import {
-  initializeTestEnvironment,
-  assertFails,
-  assertSucceeds,
-  type RulesTestEnvironment,
-} from "@firebase/rules-unit-testing";
-import { doc, getDoc, setDoc, getDocs, collection } from "firebase/firestore";
-import {
-  initializeApp,
-  deleteApp,
-  getAuth,
-  getFirestore,
-} from "../../functions/test-support";
+import test, { after, before } from "node:test";
 import { GameService } from "../../functions/src/service";
+import {
+    deleteApp,
+    getAuth,
+    getFirestore,
+    initializeApp,
+} from "../../functions/test-support";
 import { ONLINE_PROTOCOL, ONLINE_RULESET } from "../../shared/online";
 const enabled = Boolean(process.env.FIRESTORE_EMULATOR_HOST);
 let environment: RulesTestEnvironment;
 const admin = enabled
-  ? initializeApp({ projectId: "demo-narnigrams" }, "tests")
+  ? initializeApp({ projectId: "narnigrams" }, "tests")
   : undefined;
 let now = 1_000_000;
 const db = admin ? getFirestore(admin) : undefined;
@@ -29,7 +29,7 @@ const service = db
 before(async () => {
   if (enabled)
     environment = await initializeTestEnvironment({
-      projectId: "demo-narnigrams",
+      projectId: "narnigrams",
       firestore: { rules: readFileSync("firestore.rules", "utf8") },
     });
 });
@@ -360,7 +360,7 @@ test(
         assert.ok(account.idToken);
         const call = async (name: string, data: unknown) => {
           const result = await fetch(
-            `http://127.0.0.1:5001/demo-narnigrams/us-central1/${name}`,
+            `http://127.0.0.1:5001/narnigrams/australia-southeast1/${name}`,
             {
               method: "POST",
               headers: {

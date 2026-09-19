@@ -41,13 +41,13 @@ With Metro and all Firebase emulators stopped, the installed Release app still l
 
 A native drag/exchange gesture could not be conclusively driven using simulator automation coordinates. Browser drag/drop and exchange passed, but physical touch gesture acceptance remains manual; no native gesture pass is claimed.
 
-A simulator build is not a signed physical-device/App Store acceptance result. No final physical iPhone, IPv6-only network, iPad compatibility, comprehensive VoiceOver/Dynamic Type/Reduce Motion, or production App Check result is claimed here.
+A simulator build is not a signed physical-device/App Store acceptance result. No final physical iPhone, IPv6-only network, iPad compatibility, or comprehensive VoiceOver/Dynamic Type/Reduce Motion result is claimed here.
 
 ## Release work still required
 
 - Test the signed production configuration on physical iPhones, including interruption, reconnect, low-memory/relaunch, IPv6-only networking, small/large screens, and iPad compatibility.
 - Complete accessibility acceptance on real devices; the automated and browser evidence is not a full accessibility audit.
-- Integrate native App Check attestation, deploy/enforce it, and verify production Firebase rules, functions, TTL, cleanup, quotas and logging configuration.
+- Verify production Firebase rules, functions, TTL, cleanup, quotas and logging configuration.
 - Publish operator-owned privacy/support URLs, complete App Store privacy/metadata/signing, confirm artwork rights, and perform the [App Review checklist](APP_REVIEW.md).
 - Rotate/revoke historical Supabase credentials and decide whether existing production data requires migration. No destructive history rewrite or production-data deletion was performed.
 
