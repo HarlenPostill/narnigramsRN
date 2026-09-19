@@ -42,3 +42,7 @@ Production iOS builds are archived and uploaded manually through Xcode. The owne
 Pure game and rating logic lives in `utils/`; online contracts in `shared/`; client repository adapters in `lib/`; authoritative Functions in `functions/src/`. Firestore denies client writes and private opponent-state reads. Local bot wins never alter public ELO. Server validation does not prevent external solvers, collusion or repeated accounts.
 
 **Credential action required:** the old tracked `.env` was untracked and preserved locally, but its Supabase values remain in git history. Rotate/revoke those credentials and review the old service's access. Determine whether existing production players need an owner-controlled migration before retiring Supabase. No git-history rewrite or production-data deletion has been performed.
+
+## Marketing website
+
+The independent Vite website lives in [`landing/`](landing/README.md), with `/terms`, `/support`, and `/privacy` pages. In Vercel, select `landing` as the Root Directory; its own lockfile and `vercel.json` configure installation, build output, and SPA deep links. Run locally with `npm --prefix landing run dev`.
