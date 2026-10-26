@@ -153,6 +153,45 @@ final class GameSession: Identifiable {
         afterChange()
     }
 
+    /// Drops a tile on a cell. An occupied cell swaps: a board tile trades places,
+    /// and a hand tile sends the occupant back to the hand slot it came from.
+    @discardableResult
+    func drop(tileID: Int, on cell: Cell) -> Bool {
+        guard !isOver, BoardBounds.contains(cell) else { return false }
+        let occupant = board[cell]
+        if let from = board.first(where: { $0.value.id == tileID })?.key {
+            guard from != cell else { return true }
+            let tile = board[from]!
+            board[from] = occupant
+            board[cell] = tile
+        } else if let i = hand.firstIndex(where: { $0.id == tileID }) {
+            let tile = hand.remove(at: i)
+            if let occupant { hand.insert(occupant, at: i) }
+            board[cell] = tile
+        } else {
+            return false
+        }
+        selection = nil
+        afterChange()
+        Haptics.place()
+        return true
+    }
+
+    /// Puts a tile into the hand at `index` (among the other hand tiles), from the board or the hand itself.
+    func moveToHand(tileID: Int, at index: Int) {
+        guard !isOver else { return }
+        let tile: Tile
+        if let cell = board.first(where: { $0.value.id == tileID })?.key {
+            tile = board.removeValue(forKey: cell)!
+            afterChange()
+        } else if let i = hand.firstIndex(where: { $0.id == tileID }) {
+            tile = hand.remove(at: i)
+        } else { return }
+        hand.insert(tile, at: min(max(0, index), hand.count))
+        selection = nil
+        Haptics.place()
+    }
+
     func returnTile(id: Int) {
         if let cell = board.first(where: { $0.value.id == id })?.key { returnToHand(cell) }
     }

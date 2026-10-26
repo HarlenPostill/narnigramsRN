@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		056B947F3C7CC3E191F92B69 /* StatsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00275AEAF1CF16F9D6F388B /* StatsView.swift */; };
+		0E42992BA4C5F142F915E566 /* GameInteraction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00A016E3244BCC30F6BFF46A /* GameInteraction.swift */; };
 		22ED71AC4E6E4D58A3EAD97C /* TileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A65851A2CCA20F4AFE5392D8 /* TileView.swift */; };
 		38C0E8711701822C2D56A2ED /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 414F1CA89AE167DA81CBD634 /* HomeView.swift */; };
 		40F192D70758E659EE1D033B /* GameSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FDC4630D71AFBE63A63BF27 /* GameSession.swift */; };
@@ -32,6 +33,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		00A016E3244BCC30F6BFF46A /* GameInteraction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameInteraction.swift; sourceTree = "<group>"; };
 		0828C78195450A09BA98A367 /* TilePool.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TilePool.swift; sourceTree = "<group>"; };
 		0A182F052C4C9134320AD78C /* BoardRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardRules.swift; sourceTree = "<group>"; };
 		0FDC4630D71AFBE63A63BF27 /* GameSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameSession.swift; sourceTree = "<group>"; };
@@ -105,6 +107,7 @@
 			isa = PBXGroup;
 			children = (
 				4459DF8003E73349D19E605B /* BoardView.swift */,
+				00A016E3244BCC30F6BFF46A /* GameInteraction.swift */,
 				86636D0019F6DC4EDEC79FF2 /* GameView.swift */,
 				414F1CA89AE167DA81CBD634 /* HomeView.swift */,
 				3C88022B5F28D85053E24319 /* ResultView.swift */,
@@ -223,6 +226,7 @@
 				C7DDB544E79056C0BFEEB5AC /* Bot.swift in Sources */,
 				60DA0E443117C7371CD69D03 /* GameCenter.swift in Sources */,
 				8A5B6C9D3FD683C82F91DC75 /* GameCenterIDs.swift in Sources */,
+				0E42992BA4C5F142F915E566 /* GameInteraction.swift in Sources */,
 				40F192D70758E659EE1D033B /* GameSession.swift in Sources */,
 				A386AF1E5BB3733F136957A2 /* GameView.swift in Sources */,
 				9807139A4BBFFB4970D38728 /* Haptics.swift in Sources */,
@@ -382,7 +386,6 @@
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.word-games";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -390,7 +393,9 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "com.hrln-interaction.narnigrams";
 				SDKROOT = iphoneos;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};
@@ -408,7 +413,6 @@
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.word-games";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -416,7 +420,9 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "com.hrln-interaction.narnigrams";
 				SDKROOT = iphoneos;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};

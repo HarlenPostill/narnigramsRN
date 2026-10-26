@@ -45,7 +45,14 @@ struct RootView: View {
             #if DEBUG
             .onChange(of: words.isLoaded) { _, loaded in
                 // `-demoGame` jumps straight into a Practice game for screenshots.
-                if loaded, ProcessInfo.processInfo.arguments.contains("-demoGame") { start(.practice(.hard)) }
+                guard loaded, ProcessInfo.processInfo.arguments.contains("-demoGame") else { return }
+                start(.practice(.hard))
+                // Lay a few tiles down so the board renders something in screenshots.
+                if let s = session {
+                    for (i, tile) in s.hand.prefix(5).enumerated() { s.drop(tileID: tile.id, on: Cell(row: 20, col: 18 + i)) }
+                    if let t = s.hand.first { s.drop(tileID: t.id, on: Cell(row: 21, col: 19)) }
+                    s.peel()
+                }
             }
             #endif
             .onChange(of: gameCenter.isAuthenticated) { _, _ in

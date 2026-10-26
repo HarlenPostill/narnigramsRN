@@ -13,8 +13,17 @@ Status as of 26 Oct 2026, branch `native-ios-rebuild`. This was a fast first pas
 - **Online matches.** The code compiles but hasn't run against real Game Center, because that needs the App Store Connect setup and two signed-in devices. See GAMECENTER.md.
 - **Leaderboard and achievement submission.** Same reason.
 - **Side-rail layout.** Not checked on screen. It should kick in on landscape, iPad landscape and foldable inner screens (wider than 640pt and roughly square or wider).
-- **Drag and drop on device.** Tap-to-place has been the main input during testing.
 - **Real device signing.** Automatic signing with team `Z43R7TX7Z9`.
+
+## Game interaction (second pass)
+
+- Dragging is now the main input. `GameInteraction` owns the drag, the drop-target frames and the board camera. The board is a custom camera (offset + scale), not a ScrollView.
+- Tiles lift on touch-down (`DragGesture(minimumDistance: 0)`). A touch that never moves 6pt counts as a tap.
+- Drop targets: an empty cell places the tile. An occupied cell swaps (board↔board trades places; hand→board sends the occupant back to the dragged tile's hand slot). Dropping on the hand inserts at the nearest slot. Dropping on Dump swaps the tile for 2.
+- Holding a tile within 36pt of the board edge auto-pans the board.
+- Pinch uses a UIKit `UIPinchGestureRecognizer` through `UIGestureRecognizerRepresentable`, so zoom stays anchored to the fingers' midpoint, and two-finger movement pans. The camera is clamped so the viewport centre always stays over the grid.
+- `TileView` is layered: side wall for thickness, gradient face, bevel inner shadows, a hairline edge stroke with a bright inner rim, and an engraved letter.
+- **Not verified:** drag feel, pinch and swaps on a real device. Only static simulator screenshots were checked, because scripted touch wasn't available.
 
 ## Known gaps and next steps
 
