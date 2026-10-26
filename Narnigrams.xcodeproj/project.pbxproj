@@ -1,0 +1,447 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		056B947F3C7CC3E191F92B69 /* StatsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00275AEAF1CF16F9D6F388B /* StatsView.swift */; };
+		22ED71AC4E6E4D58A3EAD97C /* TileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A65851A2CCA20F4AFE5392D8 /* TileView.swift */; };
+		38C0E8711701822C2D56A2ED /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 414F1CA89AE167DA81CBD634 /* HomeView.swift */; };
+		40F192D70758E659EE1D033B /* GameSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FDC4630D71AFBE63A63BF27 /* GameSession.swift */; };
+		43181BF36CC868A6B78B957F /* BoardRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A182F052C4C9134320AD78C /* BoardRules.swift */; };
+		4B183BABFD1639E7A9886EF1 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 785336536FD44FEF2BA1B94F /* SettingsView.swift */; };
+		53EFA7E4A3BB84D37A2CE2CD /* WordList.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDAB903C24AA8AE2CFE3DB21 /* WordList.swift */; };
+		5527FD263B07D11A20FEB169 /* TilePool.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0828C78195450A09BA98A367 /* TilePool.swift */; };
+		60DA0E443117C7371CD69D03 /* GameCenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9923C4091443CF5403B01282 /* GameCenter.swift */; };
+		8A5B6C9D3FD683C82F91DC75 /* GameCenterIDs.swift in Sources */ = {isa = PBXBuildFile; fileRef = F142AE208DF5AA8CD277942B /* GameCenterIDs.swift */; };
+		8DC919D0EFF2C40B21DFD65C /* OnlineMatch.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA5AAFE4EB744C7BC5ED93BC /* OnlineMatch.swift */; };
+		9807139A4BBFFB4970D38728 /* Haptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EAA4427D968A1FA6929AFFE /* Haptics.swift */; };
+		A0F0E5102766FB6A9920DF48 /* BoardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4459DF8003E73349D19E605B /* BoardView.swift */; };
+		A386AF1E5BB3733F136957A2 /* GameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86636D0019F6DC4EDEC79FF2 /* GameView.swift */; };
+		AE20D22C1D07751A60440817 /* ESDB-Copyright.txt in Resources */ = {isa = PBXBuildFile; fileRef = 604DABC74C3AE7EA7EC342A5 /* ESDB-Copyright.txt */; };
+		B953430CDBF0E1207EAD2F69 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E2F454FAA5310F6EE32918E /* Models.swift */; };
+		BEFC9277BB158F7A6A282960 /* Stats.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E30CE4A01FCC5A0244530ED /* Stats.swift */; };
+		C6EFC5BE6EA818E66691BE1A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 806DA50177CC96BF07502B61 /* Assets.xcassets */; };
+		C7DDB544E79056C0BFEEB5AC /* Bot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9414BE212B0AE1D04CCBE94B /* Bot.swift */; };
+		D043E366BD44D1D215866166 /* NarnigramsApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60AC6CA0B269E6CF927D0EE9 /* NarnigramsApp.swift */; };
+		D6C9D50A52813ABAC4CF9E11 /* words.txt in Resources */ = {isa = PBXBuildFile; fileRef = 7C4797040F063B0A102D3556 /* words.txt */; };
+		DF00D00719E8F8A0376A0004 /* ResultView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C88022B5F28D85053E24319 /* ResultView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		0828C78195450A09BA98A367 /* TilePool.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TilePool.swift; sourceTree = "<group>"; };
+		0A182F052C4C9134320AD78C /* BoardRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardRules.swift; sourceTree = "<group>"; };
+		0FDC4630D71AFBE63A63BF27 /* GameSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameSession.swift; sourceTree = "<group>"; };
+		3C88022B5F28D85053E24319 /* ResultView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResultView.swift; sourceTree = "<group>"; };
+		414F1CA89AE167DA81CBD634 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		43D1BD063EB3070557C4DF37 /* Narnigrams.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Narnigrams.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		4459DF8003E73349D19E605B /* BoardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardView.swift; sourceTree = "<group>"; };
+		4E2F454FAA5310F6EE32918E /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		4E30CE4A01FCC5A0244530ED /* Stats.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Stats.swift; sourceTree = "<group>"; };
+		604DABC74C3AE7EA7EC342A5 /* ESDB-Copyright.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "ESDB-Copyright.txt"; sourceTree = "<group>"; };
+		60AC6CA0B269E6CF927D0EE9 /* NarnigramsApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NarnigramsApp.swift; sourceTree = "<group>"; };
+		785336536FD44FEF2BA1B94F /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		7C4797040F063B0A102D3556 /* words.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = words.txt; sourceTree = "<group>"; };
+		806DA50177CC96BF07502B61 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		86636D0019F6DC4EDEC79FF2 /* GameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameView.swift; sourceTree = "<group>"; };
+		8EAA4427D968A1FA6929AFFE /* Haptics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Haptics.swift; sourceTree = "<group>"; };
+		9414BE212B0AE1D04CCBE94B /* Bot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Bot.swift; sourceTree = "<group>"; };
+		9923C4091443CF5403B01282 /* GameCenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameCenter.swift; sourceTree = "<group>"; };
+		A00275AEAF1CF16F9D6F388B /* StatsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsView.swift; sourceTree = "<group>"; };
+		A65851A2CCA20F4AFE5392D8 /* TileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TileView.swift; sourceTree = "<group>"; };
+		BA5AAFE4EB744C7BC5ED93BC /* OnlineMatch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnlineMatch.swift; sourceTree = "<group>"; };
+		C856756768D5D710DFE2A5AA /* Narnigrams.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Narnigrams.entitlements; sourceTree = "<group>"; };
+		DDAB903C24AA8AE2CFE3DB21 /* WordList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordList.swift; sourceTree = "<group>"; };
+		F142AE208DF5AA8CD277942B /* GameCenterIDs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameCenterIDs.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		17594F0D067B52299DD50E55 /* Game */ = {
+			isa = PBXGroup;
+			children = (
+				0A182F052C4C9134320AD78C /* BoardRules.swift */,
+				9414BE212B0AE1D04CCBE94B /* Bot.swift */,
+				0FDC4630D71AFBE63A63BF27 /* GameSession.swift */,
+				4E2F454FAA5310F6EE32918E /* Models.swift */,
+				4E30CE4A01FCC5A0244530ED /* Stats.swift */,
+				0828C78195450A09BA98A367 /* TilePool.swift */,
+				DDAB903C24AA8AE2CFE3DB21 /* WordList.swift */,
+			);
+			path = Game;
+			sourceTree = "<group>";
+		};
+		8A1633EC0403ECE600BE63C3 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				8EAA4427D968A1FA6929AFFE /* Haptics.swift */,
+				60AC6CA0B269E6CF927D0EE9 /* NarnigramsApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		962F6CFF3A0C3ACAFE1DF18F /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				604DABC74C3AE7EA7EC342A5 /* ESDB-Copyright.txt */,
+				7C4797040F063B0A102D3556 /* words.txt */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		9C59D2D3EB5EEE4C8238F408 /* GameCenter */ = {
+			isa = PBXGroup;
+			children = (
+				9923C4091443CF5403B01282 /* GameCenter.swift */,
+				F142AE208DF5AA8CD277942B /* GameCenterIDs.swift */,
+				BA5AAFE4EB744C7BC5ED93BC /* OnlineMatch.swift */,
+			);
+			path = GameCenter;
+			sourceTree = "<group>";
+		};
+		AB97F59851F423DDDFFB5A37 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				4459DF8003E73349D19E605B /* BoardView.swift */,
+				86636D0019F6DC4EDEC79FF2 /* GameView.swift */,
+				414F1CA89AE167DA81CBD634 /* HomeView.swift */,
+				3C88022B5F28D85053E24319 /* ResultView.swift */,
+				785336536FD44FEF2BA1B94F /* SettingsView.swift */,
+				A00275AEAF1CF16F9D6F388B /* StatsView.swift */,
+				A65851A2CCA20F4AFE5392D8 /* TileView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		B05C7127548F29855ED84631 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				43D1BD063EB3070557C4DF37 /* Narnigrams.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		D6B03142F0E60F4CF2467DA7 /* Narnigrams */ = {
+			isa = PBXGroup;
+			children = (
+				806DA50177CC96BF07502B61 /* Assets.xcassets */,
+				C856756768D5D710DFE2A5AA /* Narnigrams.entitlements */,
+				8A1633EC0403ECE600BE63C3 /* App */,
+				17594F0D067B52299DD50E55 /* Game */,
+				9C59D2D3EB5EEE4C8238F408 /* GameCenter */,
+				962F6CFF3A0C3ACAFE1DF18F /* Resources */,
+				AB97F59851F423DDDFFB5A37 /* Views */,
+			);
+			path = Narnigrams;
+			sourceTree = "<group>";
+		};
+		F400C481BC69281E86FCB446 = {
+			isa = PBXGroup;
+			children = (
+				D6B03142F0E60F4CF2467DA7 /* Narnigrams */,
+				B05C7127548F29855ED84631 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		3B9C028810F4E8256A4DD467 /* Narnigrams */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 9648FAAD3080C878D28FC550 /* Build configuration list for PBXNativeTarget "Narnigrams" */;
+			buildPhases = (
+				4ED5D76FB08AFBC303A90572 /* Sources */,
+				B74CCFE4835EEC779DAFBEE7 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Narnigrams;
+			packageProductDependencies = (
+			);
+			productName = Narnigrams;
+			productReference = 43D1BD063EB3070557C4DF37 /* Narnigrams.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		4EFE711067F13EA7E13E7C78 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					3B9C028810F4E8256A4DD467 = {
+						DevelopmentTeam = Z43R7TX7Z9;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = CE0BAB3DF0B4DDA3005DCA58 /* Build configuration list for PBXProject "Narnigrams" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = F400C481BC69281E86FCB446;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = B05C7127548F29855ED84631 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				3B9C028810F4E8256A4DD467 /* Narnigrams */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		B74CCFE4835EEC779DAFBEE7 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C6EFC5BE6EA818E66691BE1A /* Assets.xcassets in Resources */,
+				AE20D22C1D07751A60440817 /* ESDB-Copyright.txt in Resources */,
+				D6C9D50A52813ABAC4CF9E11 /* words.txt in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		4ED5D76FB08AFBC303A90572 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				43181BF36CC868A6B78B957F /* BoardRules.swift in Sources */,
+				A0F0E5102766FB6A9920DF48 /* BoardView.swift in Sources */,
+				C7DDB544E79056C0BFEEB5AC /* Bot.swift in Sources */,
+				60DA0E443117C7371CD69D03 /* GameCenter.swift in Sources */,
+				8A5B6C9D3FD683C82F91DC75 /* GameCenterIDs.swift in Sources */,
+				40F192D70758E659EE1D033B /* GameSession.swift in Sources */,
+				A386AF1E5BB3733F136957A2 /* GameView.swift in Sources */,
+				9807139A4BBFFB4970D38728 /* Haptics.swift in Sources */,
+				38C0E8711701822C2D56A2ED /* HomeView.swift in Sources */,
+				B953430CDBF0E1207EAD2F69 /* Models.swift in Sources */,
+				D043E366BD44D1D215866166 /* NarnigramsApp.swift in Sources */,
+				8DC919D0EFF2C40B21DFD65C /* OnlineMatch.swift in Sources */,
+				DF00D00719E8F8A0376A0004 /* ResultView.swift in Sources */,
+				4B183BABFD1639E7A9886EF1 /* SettingsView.swift in Sources */,
+				BEFC9277BB158F7A6A282960 /* Stats.swift in Sources */,
+				056B947F3C7CC3E191F92B69 /* StatsView.swift in Sources */,
+				5527FD263B07D11A20FEB169 /* TilePool.swift in Sources */,
+				22ED71AC4E6E4D58A3EAD97C /* TileView.swift in Sources */,
+				53EFA7E4A3BB84D37A2CE2CD /* WordList.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		1846C5C1C24757B412E5D055 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = Z43R7TX7Z9;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MARKETING_VERSION = 2.0.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		35E74428B0D7F69E892126AB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = Z43R7TX7Z9;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MARKETING_VERSION = 2.0.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		37559857680DAC0B7BE5B9B2 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Narnigrams/Narnigrams.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Narnigrams;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.word-games";
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.hrln-interaction.narnigrams";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		6B9F5818A678D9C9645C6E61 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Narnigrams/Narnigrams.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Narnigrams;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.word-games";
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.hrln-interaction.narnigrams";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		9648FAAD3080C878D28FC550 /* Build configuration list for PBXNativeTarget "Narnigrams" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				6B9F5818A678D9C9645C6E61 /* Debug */,
+				37559857680DAC0B7BE5B9B2 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		CE0BAB3DF0B4DDA3005DCA58 /* Build configuration list for PBXProject "Narnigrams" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1846C5C1C24757B412E5D055 /* Debug */,
+				35E74428B0D7F69E892126AB /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 4EFE711067F13EA7E13E7C78 /* Project object */;
+}

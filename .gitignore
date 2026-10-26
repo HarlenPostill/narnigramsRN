@@ -1,55 +1,24 @@
-# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
-
-# dependencies
-node_modules/
-
-# Expo
-.expo/
-dist/
-web-build/
-expo-env.d.ts
-
-# Native
-.kotlin/
-*.orig.*
-*.jks
-*.p8
-*.p12
-*.key
-*.mobileprovision
-
-# Metro
-.metro-health-check*
-
-# debug
-npm-debug.*
-yarn-debug.*
-yarn-error.*
-
 # macOS
 .DS_Store
-*.pem
 
-# Environment configuration stays local; never bundle server credentials.
+# Xcode
+build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+*.xcscmblueprint
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Signing material never belongs in git
+*.p8
+*.p12
+*.mobileprovision
+*.pem
+*.key
+
+# Local environment
 .env
 .env.*
 !.env.example
-**/service-account*.json
-**/serviceAccount*.json
-
-# Firebase emulator state, local config and generated Functions output
-.firebase/
-firebase-debug.log*
-firestore-debug.log*
-ui-debug.log*
-functions/lib/
-coverage/
-
-# typescript
-*.tsbuildinfo
-
-app-example
-
-# generated native folders
-/ios
-/android
